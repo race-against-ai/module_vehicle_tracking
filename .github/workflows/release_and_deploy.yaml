@@ -1,0 +1,15 @@
+name: Build release and deploy
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  release_and_deploy:
+    uses: vw-wob-it-edu-ngitl/raai_utils/.github/workflows/release_and_deploy.yaml@master
+    with:
+      version: ${{ github.ref_name }}
+
