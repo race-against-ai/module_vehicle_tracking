@@ -31,7 +31,7 @@ class ROIDefiner:
         """Defines the `cv2.VideoCapture()`
 
         Raises:
-            FileNotFoundError: If the `video_path` in the `__init__` doesn't exist or is empty.
+            `FileNotFoundError`: If the `video_path` in the `__init__` doesn't exist or is empty.
         """
         if self.__VIDEO_PATH == "":
             self.__define_image_receiver()
@@ -63,11 +63,11 @@ class ROIDefiner:
         """A function that handles the mouse events sent from `cv2.setMouseCallback()`
 
         Args:
-            event (int): The event id of the mouse.
-            x (int): The x position of the mouse.
-            y (int): The y position of the mouse.
-            _flags : Not used/Placeholder.
-            _params : Not used/Placeholder.
+            `event (int)`: The event id of the mouse.
+            `x (int)`: The x position of the mouse.
+            `y (int)`: The y position of the mouse.
+            `_flags`: Not used/Placeholder.
+            `_params`: Not used/Placeholder.
         """
         if event == cv2.EVENT_LBUTTONDOWN:
             self.__roi_points.append((x, y))
@@ -81,7 +81,7 @@ class ROIDefiner:
         """Reads the next frame in the video.
 
         Raises:
-            IndexError: Is raised if the video has ended or the next frame is empty.
+            `IndexError`: Is raised if the video has ended or the next frame is empty.
         """
         if self.__VIDEO_PATH == "":
             frame_bytes = self.__FRAME_RECEIVER.recv()
@@ -118,10 +118,10 @@ class ROIDefiner:
         Can also be called with `force_quit = True` to quit the program and save the ROI.
 
         Args:
-            force_quit (bool, optional): If set to true exits the program and saves the ROI. Defaults to False.
+            `force_quit (bool, optional)`: If set to true exits the program and saves the ROI. Defaults to False.
 
         Raises:
-            KeyboardInterrupt: Triggers the interrupt to exit the program.
+            `KeyboardInterrupt`: Triggers the interrupt to exit the program.
         """
         if force_quit or cv2.waitKey(1) & 0xFF == ord("q"):
             cv2.destroyAllWindows()
