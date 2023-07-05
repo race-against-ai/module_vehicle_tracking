@@ -1,4 +1,4 @@
-# RAAI Module Template
+# RAAI Module Vehicle Tracking
 A GitHub Template for creating modular RAAI Components
 
 ## Stuff you need to change
