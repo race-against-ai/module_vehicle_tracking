@@ -1,5 +1,6 @@
 # Copyright (C) 2022 NG:ITL
-# import the main file in the backend folder
+from vehicle_tracking.tracker import VehicleTracker
 
 if __name__ == "__main__":
-    print("enter you projects main function :)")
+    tracker = VehicleTracker()
+    tracker.main()
