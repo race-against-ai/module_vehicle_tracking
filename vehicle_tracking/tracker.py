@@ -56,29 +56,25 @@ class VehicleTracker:
         self.__image_source = image_source
         self.__show_tracking_view = show_tracking_view
         self.__record_video = record_video
-        self.__read_new_frame()
-        self.__define_roi()
-        self.__define_coordinate_sender()
-        if record_video:
-            size = image_source.frame_size[:2][::-1]
-            self.__output_video = cv2.VideoWriter("output.mp4", cv2.VideoWriter_fourcc(*"mp4v"), 30, size)
-        self.__bbox = cv2.selectROI("Car Tracking", self.__frame)
         self.__last_timestamp = time()
         self.__previous_contours: List[Any] = []
-
-    def __define_roi(self) -> None:
-        """Defines the ROI list"""
+        
         self.__region_of_interest: np.ndarray | None = None
         if path.isfile("region_of_interest.json"):
             with open("region_of_interest.json", "r") as f:
                 self.__region_of_interest = np.array(load(f))
         else:
             print("No region of interest found. For the best results use the script 'roi_definer.py'.")
-
-    def __define_coordinate_sender(self):
-        """Defines the pynng sender for the coordinates."""
+        
         self.__address_sender = Pub0()
         self.__address_sender.listen(ADDRESS_SEND_LINK)
+        
+        if record_video:
+            size = image_source.frame_size[:2][::-1]
+            self.__output_video = cv2.VideoWriter("output.mp4", cv2.VideoWriter_fourcc(*"mp4v"), 30, size)
+        
+        self.__read_new_frame()
+        self.__bbox = cv2.selectROI("Car Tracking", self.__frame)
 
     # Called by self.main Functions
     def __read_new_frame(self) -> None:
