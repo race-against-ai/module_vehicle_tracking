@@ -55,7 +55,6 @@ class VehicleTracker:
         self.__image_source = image_source
         self.__show_tracking_view = show_tracking_view
         self.__record_video = record_video
-        self.__current_dir = path.dirname(path.abspath(__file__))
         self.__define_roi()
         self.__define_coordinate_sender()
         if record_video:
@@ -69,8 +68,8 @@ class VehicleTracker:
         """Defines the ROI list
         """
         self.__region_of_interest: np.ndarray | None = None
-        if path.isfile(path.join(self.__current_dir, "region_of_interest.json")):
-            with open(path.join(self.__current_dir, "region_of_interest.json"), "r") as f:
+        if path.isfile("region_of_interest.json"):
+            with open("region_of_interest.json", "r") as f:
                 self.__region_of_interest = np.array(load(f))
         else:
             print("No region of interest found. For the best results use the script 'roi_definer.py'.")
