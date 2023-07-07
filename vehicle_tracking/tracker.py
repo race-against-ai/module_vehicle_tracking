@@ -58,21 +58,21 @@ class VehicleTracker:
         self.__record_video = record_video
         self.__last_timestamp = time()
         self.__previous_contours: List[Any] = []
-        
+
         self.__region_of_interest: np.ndarray | None = None
         if path.isfile("region_of_interest.json"):
             with open("region_of_interest.json", "r") as f:
                 self.__region_of_interest = np.array(load(f))
         else:
             print("No region of interest found. For the best results use the script 'roi_definer.py'.")
-        
+
         self.__address_sender = Pub0()
         self.__address_sender.listen(ADDRESS_SEND_LINK)
-        
+
         if record_video:
             size = image_source.frame_size[:2][::-1]
             self.__output_video = cv2.VideoWriter("output.mp4", cv2.VideoWriter_fourcc(*"mp4v"), 30, size)
-        
+
         self.__read_new_frame()
         self.__bbox = cv2.selectROI("Car Tracking", self.__frame)
 
