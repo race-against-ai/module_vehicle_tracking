@@ -12,7 +12,7 @@ class VideoFileSource:
             video_path (str): The path of the video to be read from.
             frame_rate (int): The frame rate of the video.
         """
-        self.__time_to_sleep = frame_rate / 60
+        self.__time_to_sleep = 1 / frame_rate
         self.__video_capture = cv2.VideoCapture(video_path)
         self.frame_size = self.read_new_frame().shape
 
