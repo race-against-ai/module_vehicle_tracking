@@ -11,7 +11,7 @@ class VideoFileSource:
         Args:
             video_path (str): The path of the video to be read from.
             frame_rate (int): The frame rate of the video.
-        """        
+        """
         self.__time_to_sleep = frame_rate / 60
         self.__video_capture = cv2.VideoCapture(video_path)
         self.frame_size = self.read_new_frame().shape
@@ -24,7 +24,7 @@ class VideoFileSource:
 
         Returns:
             np.ndarray: The frame to be returned.
-        """   
+        """
         success, frame = self.__video_capture.read()
         if not success:
             raise IndexError("The next frame could not be read. The frame is empty.")
@@ -49,7 +49,7 @@ class CameraStreamSource:
 
         Returns:
             np.ndarray: The frame to be returned.
-        """        
+        """
         frame_bytes = self.__frame_receiver.recv()
         frame = np.frombuffer(frame_bytes, np.uint8)
         frame = frame.reshape(self.frame_size)

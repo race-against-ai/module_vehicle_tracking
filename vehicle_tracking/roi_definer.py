@@ -23,10 +23,10 @@ class ROIDefiner:
         """
         self.__roi_points: List[Tuple[int, int]] = []
         self.__VIDEO_PATH = video_path
-        
+
         self.__define_cap()
         self.__define_windows()
-        
+
     def __define_cap(self) -> None:
         """Defines the `cv2.VideoCapture()`
 
@@ -42,20 +42,18 @@ class ROIDefiner:
             success, self.__frame = self.__VIDEO_CAP.read()
             if not success:
                 raise FileNotFoundError("Could not read the first frame of the video.")
-        
+
     def __define_image_receiver(self) -> None:
-        """Defines the image receiver, so it can receive the cameras images.
-        """
+        """Defines the image receiver, so it can receive the cameras images."""
         self.__FRAME_RECEIVER = Sub0()
         self.__FRAME_RECEIVER.subscribe("")
         self.__FRAME_RECEIVER.dial(FRAME_RECEIVE_LINK)
-    
+
     def __define_windows(self) -> None:
-        """Defines the windows to be used by `cv2.imshow()`
-        """
+        """Defines the windows to be used by `cv2.imshow()`"""
         cv2.namedWindow("Point Drawer")
         cv2.namedWindow("Region Of Interest")
-        
+
         cv2.setMouseCallback("Point Drawer", self.__mouse_event_handler)
 
     # Mouse Handler
@@ -91,14 +89,14 @@ class ROIDefiner:
             success, self.__frame = self.__VIDEO_CAP.read()
             if not success:
                 raise IndexError("Frame could not be read. Video probably ended.")
-    
+
     def __draw_on_frame(self) -> None:
-        """Draws lines connecting the ROI points. Draws ROI (if >= 3 points).
-        """
+        """Draws lines connecting the ROI points. Draws ROI (if >= 3 points)."""
         self.__lined_frame = self.__frame.copy()
         if len(self.__roi_points) >= 1:
-            self.__lined_frame = cv2.polylines(self.__lined_frame, [np.array(self.__roi_points)], True,
-                                               (255, 255, 255), 2)
+            self.__lined_frame = cv2.polylines(
+                self.__lined_frame, [np.array(self.__roi_points)], True, (255, 255, 255), 2
+            )
         if len(self.__roi_points) >= 3:
             np_points = np.array(self.__roi_points)
             mask = np.zeros_like(self.__frame)
@@ -106,13 +104,12 @@ class ROIDefiner:
             self.__updated_frame = cv2.bitwise_and(self.__frame, mask)
         else:
             self.__updated_frame = np.zeros_like(self.__frame)
-    
+
     def __show_images(self) -> None:
-        """Uses `cv2.imshow()` to send the frame to the `cv2.namedWindow`.
-        """
+        """Uses `cv2.imshow()` to send the frame to the `cv2.namedWindow`."""
         cv2.imshow("Point Drawer", self.__lined_frame)
         cv2.imshow("Region Of Interest", self.__updated_frame)
-        
+
     def __check_to_close(self, force_quit: bool = False) -> None:
         """Uses `cv2.waitKey()` to see if the user presses 'q' to exit the program.
         Can also be called with `force_quit = True` to quit the program and save the ROI.
@@ -129,8 +126,7 @@ class ROIDefiner:
             raise KeyboardInterrupt("User has interrupted the program.")
 
     def __save_roi(self) -> None:
-        """Saves the ROI as `region_of_interest.json`.
-        """
+        """Saves the ROI as `region_of_interest.json`."""
         if len(self.__roi_points) >= 3:
             with open(path.join(CURRENT_DIR, "region_of_interest.json"), "x") as f:
                 dump(self.__roi_points, f)
@@ -139,8 +135,7 @@ class ROIDefiner:
 
     # Main Functions
     def main(self) -> None:
-        """Is an infinite loop that goes through the camera stream/video.
-        """
+        """Is an infinite loop that goes through the camera stream/video."""
         while True:
             self.__read_new_frame()
             self.__draw_on_frame()

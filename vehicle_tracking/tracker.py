@@ -25,17 +25,14 @@ def calculate_distance(rect1: List[int], rect2: List[int]) -> int:
     Returns:
         `int`: The distance of the 2 rectangles.
     """
-    middle1 = (rect1[0] + rect1[2] / 2,
-               rect1[1] + rect1[3] / 2)
-    middle2 = (rect2[0] + rect2[2] / 2,
-               rect2[1] + rect2[3] / 2)
+    middle1 = (rect1[0] + rect1[2] / 2, rect1[1] + rect1[3] / 2)
+    middle2 = (rect2[0] + rect2[2] / 2, rect2[1] + rect2[3] / 2)
     return floor(((middle2[0] - middle1[0]) ** 2 + (middle2[1] - middle1[1]) ** 2) ** 0.5)
 
 
 # Static Sorting Functions
-def sorting_function_contours(contour) -> int:   
-    """Sorts the contours by the size of the bounding box.
-    """
+def sorting_function_contours(contour) -> int:
+    """Sorts the contours by the size of the bounding box."""
     _, _, w, h = cv2.boundingRect(contour)
     return w * h
 
@@ -43,8 +40,12 @@ def sorting_function_contours(contour) -> int:
 # Classes
 class VehicleTracker:
     # Initialization
-    def __init__(self, image_source: VideoFileSource | CameraStreamSource,
-                 show_tracking_view: bool = True, record_video: bool = False):
+    def __init__(
+        self,
+        image_source: VideoFileSource | CameraStreamSource,
+        show_tracking_view: bool = True,
+        record_video: bool = False,
+    ):
         """Defines the settings and initializes everything.
 
         Args:
@@ -65,8 +66,7 @@ class VehicleTracker:
         self.__previous_contours: List[Any] = []
 
     def __define_roi(self) -> None:
-        """Defines the ROI list
-        """
+        """Defines the ROI list"""
         self.__region_of_interest: np.ndarray | None = None
         if path.isfile("region_of_interest.json"):
             with open("region_of_interest.json", "r") as f:
@@ -75,20 +75,17 @@ class VehicleTracker:
             print("No region of interest found. For the best results use the script 'roi_definer.py'.")
 
     def __define_coordinate_sender(self):
-        """Defines the pynng sender for the coordinates.
-        """
+        """Defines the pynng sender for the coordinates."""
         self.__address_sender = Pub0()
         self.__address_sender.listen(ADDRESS_SEND_LINK)
 
     # Called by self.main Functions
     def __read_new_frame(self) -> None:
-        """Reads the next frame in the camera stream/video.
-        """
+        """Reads the next frame in the camera stream/video."""
         self.__frame = self.__image_source.read_new_frame()
 
     def __create_timestamp(self) -> None:
-        """Creates a new timestamp and outputs the FPS and delta time
-        """
+        """Creates a new timestamp and outputs the FPS and delta time"""
         current_timestamp = time()
         delta = current_timestamp - self.__last_timestamp or 1
         fps = 1.0 / delta
@@ -96,8 +93,7 @@ class VehicleTracker:
         self.__last_timestamp = current_timestamp
 
     def __process_image(self) -> None:
-        """Processes the image to prepare it for tracking.
-        """
+        """Processes the image to prepare it for tracking."""
         # Region of Interest
         if self.__region_of_interest is None:
             roi = self.__frame
@@ -109,15 +105,14 @@ class VehicleTracker:
         # Filters color to be mostly orange
         in_range_image = cv2.inRange(roi, LOWER_ORANGE, UPPER_ORANGE)
 
-        # Fills all the gaps making more distinct 
+        # Fills all the gaps making more distinct
         kernel = np.ones((10, 10), np.uint8)
         closing = cv2.morphologyEx(in_range_image.astype(np.uint8), cv2.MORPH_CLOSE, kernel)
 
         self.__processed_frame = closing
 
     def __search_for_contours(self) -> None:
-        """Searches the processed image for contours
-        """
+        """Searches the processed image for contours"""
         contours, _ = cv2.findContours(self.__processed_frame, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         contours = sorted(contours, key=sorting_function_contours, reverse=True)
 
@@ -141,8 +136,7 @@ class VehicleTracker:
         self.__current_contours = good_contours
 
     def __make_prediction(self) -> None:
-        """Makes a prediction of a contour that is most likely the car.
-        """
+        """Makes a prediction of a contour that is most likely the car."""
         if self.__current_contours == 0:
             return
         else:
@@ -164,8 +158,7 @@ class VehicleTracker:
                 self.__bbox = prediction[1]
 
     def __visualize_contours(self) -> None:
-        """Visualizes the contours with their bounding boxes on the processed frame.
-        """
+        """Visualizes the contours with their bounding boxes on the processed frame."""
         self.__visualized_frame = self.__frame.copy()
 
         # Draws green boxes around each possibility.
@@ -178,8 +171,7 @@ class VehicleTracker:
         cv2.rectangle(self.__visualized_frame, (x, y, x + w, y + h), (x + w, y + h), (255, 255, 255), 2)
 
     def __write_frame_to_video(self) -> None:
-        """Writes the last visualized frame to the video.
-        """
+        """Writes the last visualized frame to the video."""
         if self.__record_video:
             self.__output_video.write(self.__visualized_frame)
 
@@ -196,17 +188,14 @@ class VehicleTracker:
                 raise KeyboardInterrupt("User pressed 'q' to stop the visualisation.")
 
     def __send_bbox_coordinates(self):
-        """Sends the middle coordinates of the car using pynng.
-        """
-        middle = (self.__bbox[0] + self.__bbox[2] / 2,
-                  self.__bbox[1] + self.__bbox[3] / 2)
+        """Sends the middle coordinates of the car using pynng."""
+        middle = (self.__bbox[0] + self.__bbox[2] / 2, self.__bbox[1] + self.__bbox[3] / 2)
         json_str = dumps(middle)
         self.__address_sender.send(json_str.encode("utf-8"))
 
     # Main Function
     def main(self):
-        """Is an infinite loop that goes through the camera stream/video.
-        """
+        """Is an infinite loop that goes through the camera stream/video."""
         while True:
             self.__read_new_frame()
             self.__process_image()
