@@ -1,5 +1,5 @@
 # Imports
-from image_sources import VideoFileSource, CameraStreamSource
+from vehicle_tracking.image_sources import VideoFileSource, CameraStreamSource
 from typing import List, Any, Tuple
 from json import load, dumps
 from pynng import Pub0
@@ -56,6 +56,7 @@ class VehicleTracker:
         self.__image_source = image_source
         self.__show_tracking_view = show_tracking_view
         self.__record_video = record_video
+        self.__read_new_frame()
         self.__define_roi()
         self.__define_coordinate_sender()
         if record_video:
@@ -168,7 +169,7 @@ class VehicleTracker:
 
         # Draws a white box around the car
         x, y, w, h = self.__bbox
-        cv2.rectangle(self.__visualized_frame, (x, y, x + w, y + h), (x + w, y + h), (255, 255, 255), 2)
+        cv2.rectangle(self.__visualized_frame, (x, y), (x + w, y + h), (255, 255, 255), 2)
 
     def __write_frame_to_video(self) -> None:
         """Writes the last visualized frame to the video."""
