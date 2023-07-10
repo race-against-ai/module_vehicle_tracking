@@ -182,7 +182,7 @@ class VehicleTracker:
             cv2.imshow("Car Tracking", self.__visualized_frame)
             key = cv2.waitKey(1) & 0xFF
             if key == ord("q"):
-                raise KeyboardInterrupt("User pressed 'q' to stop the visualisation.")
+                raise KeyboardInterrupt("User pressed 'q' to stop the visualization.")
 
     def __send_bbox_coordinates(self):
         """Sends the middle coordinates of the car using pynng."""
