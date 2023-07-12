@@ -11,6 +11,7 @@ import cv2
 
 # Constants
 ADDRESS_SEND_LINK = "ipc:///tmp/RAAI/vehicle_coordinates.ipc"
+FRAME_SEND_LINK = "ipc:///tmp/RAAI/tracker_frame.ipc"
 LOWER_ORANGE, UPPER_ORANGE = np.array((0, 0, 100)), np.array((55, 115, 225))
 
 
@@ -68,6 +69,9 @@ class VehicleTracker:
 
         self.__address_sender = Pub0()
         self.__address_sender.listen(ADDRESS_SEND_LINK)
+        
+        self.__frame_sender = Pub0()
+        self.__frame_sender.listen(FRAME_SEND_LINK)
 
         if record_video:
             size = image_source.frame_size[:2][::-1]
@@ -186,9 +190,15 @@ class VehicleTracker:
 
     def __send_bbox_coordinates(self):
         """Sends the middle coordinates of the car using pynng."""
-        middle = (self.__bbox[0] + self.__bbox[2] / 2, self.__bbox[1] + self.__bbox[3] / 2)
-        json_str = dumps(middle)
-        self.__address_sender.send(json_str.encode("utf-8"))
+        middle = (self.__bbox[0] + floor(self.__bbox[2] / 2), self.__bbox[1] + floor(self.__bbox[3] / 2))
+        str_with_topic = "pixel_coordinates: " + dumps(middle)
+        self.__address_sender.send(str_with_topic)
+    
+    def __send_processed_frame(self):
+        """Sends the processed frame to time_tracking using pynng."""
+        np_frame = np.array(self.__visualized_frame)
+        frame_bytes = np_frame.tobytes()
+        self.__frame_sender.send(frame_bytes)
 
     # Main Function
     def main(self):
