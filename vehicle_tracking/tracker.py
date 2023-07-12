@@ -61,8 +61,8 @@ class VehicleTracker:
         self.__previous_contours: List[Any] = []
 
         self.__region_of_interest: np.ndarray | None = None
-        if path.isfile("region_of_interest.json"):
-            with open("region_of_interest.json", "r") as f:
+        if path.isfile("vehicle_tracking/region_of_interest.json"):
+            with open("vehicle_tracking/region_of_interest.json", "r") as f:
                 self.__region_of_interest = np.array(load(f))
         else:
             print("No region of interest found. For the best results use the script 'roi_definer.py'.")
@@ -192,7 +192,7 @@ class VehicleTracker:
         """Sends the middle coordinates of the car using pynng."""
         middle = (self.__bbox[0] + floor(self.__bbox[2] / 2), self.__bbox[1] + floor(self.__bbox[3] / 2))
         str_with_topic = "pixel_coordinates: " + dumps(middle)
-        self.__address_sender.send(str_with_topic)
+        self.__address_sender.send(str_with_topic.encode('utf-8'))
     
     def __send_processed_frame(self):
         """Sends the processed frame to time_tracking using pynng."""
