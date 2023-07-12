@@ -1,3 +1,4 @@
+from pathlib import Path
 from time import sleep
 from pynng import Sub0
 import numpy as np
@@ -5,15 +6,15 @@ import cv2
 
 
 class VideoFileSource:
-    def __init__(self, video_path: str, frame_rate: int) -> None:
+    def __init__(self, video_file_filepath: Path, frame_rate: int) -> None:
         """An image source which reads images from a file.
 
         Args:
-            video_path (str): The path of the video to be read from.
+            video_file_filepath (str): The path of the video to be read from.
             frame_rate (int): The frame rate of the video.
         """
         self.__time_to_sleep = 1 / frame_rate
-        self.__video_capture = cv2.VideoCapture(video_path)
+        self.__video_capture = cv2.VideoCapture(video_file_filepath)
         self.frame_size = self.read_new_frame().shape
 
     def read_new_frame(self) -> np.ndarray:

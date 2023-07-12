@@ -201,15 +201,14 @@ class VehicleTracker:
         self.__frame_sender.send(frame_bytes)
 
     # Main Function
-    def main(self):
+    def step(self):
         """Is an infinite loop that goes through the camera stream/video."""
-        while True:
-            self.__read_new_frame()
-            self.__process_image()
-            self.__search_for_contours()
-            self.__make_prediction()
-            self.__visualize_contours()
-            self.__write_frame_to_video()
-            self.__show_frame()
-            self.__send_bbox_coordinates()
-            self.__create_timestamp()
+        self.__read_new_frame()
+        self.__process_image()
+        self.__search_for_contours()
+        self.__make_prediction()
+        self.__visualize_contours()
+        self.__write_frame_to_video()
+        self.__show_frame()
+        self.__send_bbox_coordinates()
+        self.__create_timestamp()

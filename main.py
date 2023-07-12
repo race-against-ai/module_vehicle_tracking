@@ -10,4 +10,5 @@ FRAME_RECEIVE_LINK = "ipc:///tmp/RAAI/camera_frame.ipc"
 if __name__ == "__main__":
     source = CameraStreamSource(FRAME_RECEIVE_LINK)
     tracker = VehicleTracker(source)
-    tracker.main()
+    while True:
+        tracker.step()
