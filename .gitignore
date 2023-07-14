@@ -161,7 +161,7 @@ cython_debug/
 
 vehicle_tracking/region_of_interest.json
 
-resources/
+resources/*
 !resources/download_resources.py
 
 .vscode
