@@ -1,3 +1,4 @@
+# Copyright (C) 2023, NG:ITL
 from typing import Tuple
 import numpy as np
 import cv2

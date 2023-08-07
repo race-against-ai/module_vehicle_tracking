@@ -1,4 +1,4 @@
-# Imports
+# Copyright (C) 2023, NG:ITL
 from typing import List
 from webdav4.client import Client
 from pathlib import Path
