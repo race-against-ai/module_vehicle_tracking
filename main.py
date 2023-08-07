@@ -1,7 +1,11 @@
 # Copyright (C) 2023, NG:ITL
+from sys import path as sys_path
+from pathlib import Path
+
+sys_path.append(str(Path(__file__).parent / "vehicle_tracking"))
+
 from vehicle_tracking.image_sources import CameraStreamSource, VideoFileSource
 from vehicle_tracking.tracker import VehicleTracker
-from pathlib import Path
 
 
 # Constants
