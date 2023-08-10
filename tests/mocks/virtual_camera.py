@@ -65,7 +65,7 @@ class ToDrawObject:
         self.path = path
         self.iteration = 0
         self.__unrounded_iteration = 0
-    
+
     def get_next_position(self) -> tuple[int, int]:
         """Get the next position of the object.
 
@@ -93,11 +93,13 @@ class VirtualCamera:
         self.__next_frame = self.__current_frame.copy()
         for _ in range(2):
             self.__generate_next_frame()
-    
+
     def __generate_next_frame(self) -> None:
         """Generate the next frame and draw all objects on it."""
         self.__current_frame = self.__next_frame.copy()
         self.__next_frame = np.zeros(self.frame_size, dtype=np.uint8)
+        for to_draw_object in self.to_draw_objects:
+            cv2.polylines(self.__next_frame, [np.array(to_draw_object.path)], True, (255, 255, 255))
         for to_draw_object in self.to_draw_objects:
             pX, pY = to_draw_object.get_next_position()
             shape_points = to_draw_object.shape.copy()
@@ -105,9 +107,14 @@ class VirtualCamera:
             x_points.sort(reverse=True)
             y_points.sort(reverse=True)
             centroid = (x_points[0] // 2, y_points[0] // 2)
-            cv2.fillPoly(self.__next_frame, [np.array(shape_points)], to_draw_object.color, offset=(pX - centroid[0], pY - centroid[1]))
+            cv2.fillPoly(
+                self.__next_frame,
+                [np.array(shape_points)],
+                to_draw_object.color,
+                offset=(pX - centroid[0], pY - centroid[1]),
+            )
             cv2.circle(self.__next_frame, (pX, pY), 3, (0, 0, 255), -1)
-    
+
     def read_new_frame(self) -> np.ndarray:
         """Read a new frame from the camera.
 
@@ -121,13 +128,23 @@ class VirtualCamera:
 
 
 if __name__ == "__main__":
-    car1 = ToDrawObject((9, 103, 246), [(0, 0), (20, 0), (20, 20), (0, 20)], 1, get_path_pixels([(100, 100), (200, 100), (200, 200), (100, 200)]))
-    car2 = ToDrawObject((0, 255, 0), [(0, 0), (20, 0), (20, 20), (0, 20)], 2, get_path_pixels([(100, 100), (200, 100), (200, 200), (100, 200)]))
+    car1 = ToDrawObject(
+        (9, 103, 246),
+        [(0, 0), (20, 0), (20, 20), (0, 20)],
+        1,
+        get_path_pixels([(100, 100), (200, 100), (200, 200), (100, 200)]),
+    )
+    car2 = ToDrawObject(
+        (0, 255, 0),
+        [(0, 0), (20, 0), (20, 20), (0, 20)],
+        2,
+        get_path_pixels([(100, 100), (200, 100), (200, 200), (100, 200)]),
+    )
     wall = ToDrawObject((255, 255, 255), [(0, 0), (20, 0), (20, 20), (0, 20)], 0, [(0, 0)])
-    
+
     cam = VirtualCamera([car1, car2, wall], 60)
     while True:
         frame = cam.read_new_frame()
         cv2.imshow("frame", frame)
-        if cv2.waitKey(1) & 0xff == ord("q"):
+        if cv2.waitKey(1) & 0xFF == ord("q"):
             break
