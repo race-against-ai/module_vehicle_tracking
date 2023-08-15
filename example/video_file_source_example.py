@@ -1,11 +1,8 @@
 # Copyright (C) 2023 NG:ITL
-import sys
+from vehicle_tracking.image_sources import VideoFileSource
+from vehicle_tracking.tracker import VehicleTracker
 from pathlib import Path
-
-sys.path.append(str(Path(__file__).parent.parent / "vehicle_tracking"))
-
-from image_sources import VideoFileSource
-from tracker import VehicleTracker
+import sys
 
 
 # Constants
