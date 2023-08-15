@@ -64,7 +64,7 @@ class ToDrawObject:
         self.speed = speed
         self.path = path
         self.iteration = 0
-        self.__unrounded_iteration = 0
+        self.__unrounded_iteration: float = 0
 
     def get_next_position(self) -> tuple[int, int]:
         """Get the next position of the object.
@@ -89,7 +89,7 @@ class VirtualCamera:
         self.frame_size: tuple[int, int, int] = (990, 1332, 3)
         self.to_draw_objects = to_draw_objects
         self.__time_to_sleep = 1 / frame_rate
-        self.__current_frame = np.ndarray(self.frame_size, dtype=np.uint8)
+        self.__current_frame: np.ndarray = np.ndarray(self.frame_size, dtype=np.uint8)
         self.__next_frame = self.__current_frame.copy()
         for _ in range(2):
             self.__generate_next_frame()
