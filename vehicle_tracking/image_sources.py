@@ -11,8 +11,8 @@ class VideoFileSource:
         """An image source which reads images from a file.
 
         Args:
-            `video_file_filepath (Path)`: The path of the video to be read from.
-            `frame_rate (int)`: The frame rate of the video.
+            video_file_filepath (Path): The path of the video to be read from.
+            frame_rate (int): The frame rate of the video.
         """
         self.__time_to_sleep = 1 / frame_rate
         self.__video_capture = cv2.VideoCapture(str(video_file_filepath))
@@ -22,10 +22,10 @@ class VideoFileSource:
         """This function reads a frame and returns the image.
 
         Raises:
-            `IndexError`: If the file is not found or if it is empty.
+            IndexError: If the file is not found or if it is empty.
 
         Returns:
-            `np.ndarray`: The frame to be returned.
+            np.ndarray: The frame to be returned.
         """
         success, frame = self.__video_capture.read()
         if not success:
@@ -39,7 +39,7 @@ class CameraStreamSource:
         """An image source which reads images from the pynng camera stream.
 
         Args:
-            `address (str)`: The pynng address to connect to the camera stream.
+            address (str): The pynng address to connect to the camera stream.
         """
         self.frame_size = (990, 1332, 3)
         self.__frame_receiver = Sub0()
@@ -50,7 +50,7 @@ class CameraStreamSource:
         """This function reads a frame and returns the image.
 
         Returns:
-            `np.ndarray`: The frame to be returned.
+            np.ndarray: The frame to be returned.
         """
         frame_bytes = self.__frame_receiver.recv()
         frame = np.frombuffer(frame_bytes, np.uint8)
