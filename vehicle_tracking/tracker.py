@@ -18,11 +18,11 @@ def calculate_distance(rect1: List[int], rect2: List[int]) -> int:
     """Calculates the distance between the middle points of two rectangles.
 
     Args:
-        `rect1 (List[int])`: The coordinates of the first rectangle. (x, y, w, h)
-        `rect2 (List[int])`: The coordinates of the second rectangle. (x, y, w, h)
+        rect1 (List[int]): The coordinates of the first rectangle. (x, y, w, h)
+        rect2 (List[int]): The coordinates of the second rectangle. (x, y, w, h)
 
     Returns:
-        `int`: The distance of the 2 rectangles.
+        int: The distance of the 2 rectangles.
     """
     middle1 = (rect1[0] + rect1[2] / 2, rect1[1] + rect1[3] / 2)
     middle2 = (rect2[0] + rect2[2] / 2, rect2[1] + rect2[3] / 2)
@@ -49,10 +49,10 @@ class VehicleTracker:
         """Defines the settings and initializes everything.
 
         Args:
-            `show_tracking_view (bool, optional)`: Decides whether it should show the tracking or not. Defaults to True.
-            `record_video (bool, optional)`: Decides whether to record a video or not. Defaults to False.
-            `video_path (str, optional)`: If set will use the video instead of the camera stream. Defaults to "".
-            `vehicle_coordinates (None | Tuple[int, int, int, int], optional)`: If set it will not prompt the selection of the car. Defaults to None. (Testing)
+            show_tracking_view (bool, optional): Decides whether it should show the tracking or not. Defaults to True.
+            record_video (bool, optional): Decides whether to record a video or not. Defaults to False.
+            video_path (str, optional): If set will use the video instead of the camera stream. Defaults to "".
+            vehicle_coordinates (None | Tuple[int, int, int, int], optional): If set it will not prompt the selection of the car. Defaults to None. (Testing)
         """
         self.__image_source = image_source
         self.__show_tracking_view = show_tracking_view
@@ -192,7 +192,7 @@ class VehicleTracker:
         """Shows the last visualized frame and allows to exit the application with 'q'.
 
         Raises:
-            `KeyboardInterrupt`: If 'q' is pressed uses this to stop the program.
+            KeyboardInterrupt: If 'q' is pressed uses this to stop the program.
         """
         if self.__show_tracking_view:
             cv2.imshow("Car Tracking", self.__visualized_frame)

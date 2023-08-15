@@ -70,7 +70,7 @@ class ToDrawObject:
         """Get the next position of the object.
 
         Returns:
-            `tuple[int, int]`: The next position of the object.
+            tuple[int, int]: The next position of the object.
         """
         position = self.path[self.iteration % len(self.path)]
         self.__unrounded_iteration += self.speed
@@ -83,8 +83,8 @@ class VirtualCamera:
         """Create a virtual camera mimicking the behavior of a real camera.
 
         Args:
-            `to_draw_objects (list[ToDrawObject])`: A list of objects to draw on the camera. The first object bottom, last object top.
-            `frame_rate (int)`: The framerate of the virtual camera.
+            to_draw_objects (list[ToDrawObject]): A list of objects to draw on the camera. The first object bottom, last object top.
+            frame_rate (int): The framerate of the virtual camera.
         """
         self.frame_size: tuple[int, int, int] = (990, 1332, 3)
         self.to_draw_objects = to_draw_objects
@@ -119,7 +119,7 @@ class VirtualCamera:
         """Read a new frame from the camera.
 
         Returns:
-            `np.ndarray`: The new frame.
+            np.ndarray: The new frame.
         """
         current = self.__current_frame.copy()
         self.__generate_next_frame()
