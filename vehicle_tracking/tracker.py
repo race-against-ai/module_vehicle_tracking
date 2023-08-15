@@ -1,18 +1,16 @@
-# Imports
+# Copyright (C) 2023, NG:ITL
 from vehicle_tracking.image_sources import VideoFileSource, CameraStreamSource
 from typing import List, Any, Tuple
 from json import load, dumps
+from pathlib import Path
 from pynng import Pub0
 from math import floor
 from time import time
-from os import path
 import numpy as np
 import cv2
 
 # Constants
-ADDRESS_SEND_LINK = "ipc:///tmp/RAAI/vehicle_coordinates.ipc"
-FRAME_SEND_LINK = "ipc:///tmp/RAAI/tracker_frame.ipc"
-LOWER_ORANGE, UPPER_ORANGE = np.array((0, 0, 100)), np.array((55, 115, 225))
+CURRENT_DIR = Path(__file__).parent
 
 
 # Static Calculation Functions
@@ -46,6 +44,7 @@ class VehicleTracker:
         image_source: VideoFileSource | CameraStreamSource,
         show_tracking_view: bool = True,
         record_video: bool = False,
+        vehicle_coordinates: None | Tuple[int, int, int, int] = None,
     ):
         """Defines the settings and initializes everything.
 
@@ -53,32 +52,45 @@ class VehicleTracker:
             `show_tracking_view (bool, optional)`: Decides whether it should show the tracking or not. Defaults to True.
             `record_video (bool, optional)`: Decides whether to record a video or not. Defaults to False.
             `video_path (str, optional)`: If set will use the video instead of the camera stream. Defaults to "".
+            `vehicle_coordinates (None | Tuple[int, int, int, int], optional)`: If set it will not prompt the selection of the car. Defaults to None. (Testing)
         """
         self.__image_source = image_source
         self.__show_tracking_view = show_tracking_view
         self.__record_video = record_video
         self.__last_timestamp = time()
         self.__previous_contours: List[Any] = []
+        self.__lower_orange = np.array((0, 0, 100))
+        self.__upper_orange = np.array((55, 115, 225))
 
         self.__region_of_interest: np.ndarray | None = None
-        if path.isfile("vehicle_tracking/region_of_interest.json"):
-            with open("vehicle_tracking/region_of_interest.json", "r") as f:
-                self.__region_of_interest = np.array(load(f))
-        else:
-            print("No region of interest found. For the best results use the script 'roi_definer.py'.")
+        with open(CURRENT_DIR.parent / "vehicle_tracking_config.json", "r") as f:
+            config = load(f)
+            self.__position_sender_link: str = config["publishers"]["position_sender"]["address"]
+            self.__position_sender_topics: dict[str, str] = config["publishers"]["position_sender"]["topics"]
+            self.__processed_frame_link: str = config["publishers"]["processed_image_sender"]["address"]
+            self.__camera_image_link: str = config["subscribers"]["camera_frame_receiver"]["address"]
+            if "roi_points" in config:
+                self.__region_of_interest = np.array(config["roi_points"])
+            else:
+                print(
+                    "No region of interest found. Please use the 'roi_definer.py' to select the region of interest and restart the tracker."
+                )
 
-        self.__address_sender = Pub0()
-        self.__address_sender.listen(ADDRESS_SEND_LINK)
-        
+        self.__position_sender = Pub0()
+        self.__position_sender.listen(self.__position_sender_link)
+
         self.__frame_sender = Pub0()
-        self.__frame_sender.listen(FRAME_SEND_LINK)
+        self.__frame_sender.listen(self.__processed_frame_link)
 
         if record_video:
             size = image_source.frame_size[:2][::-1]
             self.__output_video = cv2.VideoWriter("output.mp4", cv2.VideoWriter_fourcc(*"mp4v"), 30, size)
 
         self.__read_new_frame()
-        self.__bbox = cv2.selectROI("Car Tracking", self.__frame)
+        if vehicle_coordinates == None:
+            self.__bbox = cv2.selectROI("Car Tracking", self.__frame)
+        else:
+            self.__bbox
 
     # Called by self.main Functions
     def __read_new_frame(self) -> None:
@@ -104,7 +116,7 @@ class VehicleTracker:
             roi = cv2.bitwise_and(self.__frame, mask)
 
         # Filters color to be mostly orange
-        in_range_image = cv2.inRange(roi, LOWER_ORANGE, UPPER_ORANGE)
+        in_range_image = cv2.inRange(roi, self.__lower_orange, self.__upper_orange)
 
         # Fills all the gaps making more distinct
         kernel = np.ones((10, 10), np.uint8)
@@ -165,7 +177,7 @@ class VehicleTracker:
         # Draws green boxes around each possibility.
         for contour in self.__current_contours:
             x, y, w, h = cv2.boundingRect(contour)
-            cv2.rectangle(self.__visualized_frame, (x, y, x + w, y + h), (0, 255, 0), 2)
+            cv2.rectangle(self.__visualized_frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
         # Draws a white box around the car
         x, y, w, h = self.__bbox
@@ -191,9 +203,9 @@ class VehicleTracker:
     def __send_bbox_coordinates(self):
         """Sends the middle coordinates of the car using pynng."""
         middle = (self.__bbox[0] + floor(self.__bbox[2] / 2), self.__bbox[1] + floor(self.__bbox[3] / 2))
-        str_with_topic = "pixel_coordinates: " + dumps(middle)
-        self.__address_sender.send(str_with_topic.encode('utf-8'))
-    
+        str_with_topic = self.__position_sender_topics["coords_image"] + ": " + dumps(middle)
+        self.__position_sender.send(str_with_topic.encode("utf-8"))
+
     def __send_processed_frame(self):
         """Sends the processed frame to time_tracking using pynng."""
         np_frame = np.array(self.__visualized_frame)
@@ -211,4 +223,5 @@ class VehicleTracker:
         self.__write_frame_to_video()
         self.__show_frame()
         self.__send_bbox_coordinates()
+        self.__send_processed_frame()
         self.__create_timestamp()
