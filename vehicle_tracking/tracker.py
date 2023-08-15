@@ -69,7 +69,7 @@ class VehicleTracker:
             self.__position_sender_topics: dict[str, str] = config["publishers"]["position_sender"]["topics"]
             self.__processed_frame_link: str = config["publishers"]["processed_image_sender"]["address"]
             self.__camera_image_link: str = config["subscribers"]["camera_frame_receiver"]["address"]
-            if "roi_points" in config:
+            if "roi_points" in config and len(config["roi_points"]) >= 3:
                 self.__region_of_interest = np.array(config["roi_points"])
             else:
                 print(
