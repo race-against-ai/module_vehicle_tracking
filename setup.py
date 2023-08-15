@@ -20,5 +20,5 @@ setup(
     url="https://github.com/vw-wob-it-edu-ngitl/raai_module_vehicle_tracking",
     packages=find_packages(),
     long_description=read("README.md"),
-    install_requires=["pynng~=0.7.2", "opencv-python~=4.7.0.72", "numpy~=1.24.2", "webdav4~=0.9.8"],
+    install_requires=["pynng~=0.7.2", "opencv-python~=4.7.0.72", "numpy~=1.24.2", "webdav4~=0.9.8", "pyperclip~=1.8.2"],
 )
