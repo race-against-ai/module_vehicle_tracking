@@ -1,5 +1,6 @@
 # Copyright (C) 2023, NG:ITL
 from vehicle_tracking.image_sources import VideoFileSource, CameraStreamSource
+from tests.mocks.virtual_camera import VirtualCamera
 from typing import List, Any, Tuple
 from json import load, dumps
 from pathlib import Path
@@ -41,7 +42,7 @@ class VehicleTracker:
     # Initialization
     def __init__(
         self,
-        image_source: VideoFileSource | CameraStreamSource,
+        image_source: VideoFileSource | CameraStreamSource | VirtualCamera,
         show_tracking_view: bool = True,
         record_video: bool = False,
         vehicle_coordinates: None | Tuple[int, int, int, int] = None,
@@ -65,10 +66,10 @@ class VehicleTracker:
         self.__region_of_interest: np.ndarray | None = None
         with open(CURRENT_DIR.parent / "vehicle_tracking_config.json", "r") as f:
             config = load(f)
-            self.__position_sender_link: str = config["publishers"]["position_sender"]["address"]
-            self.__position_sender_topics: dict[str, str] = config["publishers"]["position_sender"]["topics"]
-            self.__processed_frame_link: str = config["publishers"]["processed_image_sender"]["address"]
-            self.__camera_image_link: str = config["subscribers"]["camera_frame_receiver"]["address"]
+            self.__position_sender_link: str = config["pynng"]["publishers"]["position_sender"]["address"]
+            self.__position_sender_topics: dict[str, str] = config["pynng"]["publishers"]["position_sender"]["topics"]
+            self.__processed_frame_link: str = config["pynng"]["publishers"]["processed_image_sender"]["address"]
+            self.__camera_image_link: str = config["pynng"]["subscribers"]["camera_frame_receiver"]["address"]
             if "roi_points" in config and len(config["roi_points"]) >= 3:
                 self.__region_of_interest = np.array(config["roi_points"])
             else:
