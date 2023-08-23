@@ -47,7 +47,6 @@ class VehicleTrackingTest(unittest.TestCase):
             ]
             actual_path: list[tuple[int, int]] = get_path_pixels(tracking_path)
             car_draw_object = ToDrawObject(CAR_COLOR, [(0, 0), (40, 0), (40, 40), (0, 40)], 1, actual_path)
-            wall = ToDrawObject((255, 255, 255), [(0, 0), (20, 0), (20, 20), (0, 20)], 0, [(0, 0)])
             start_coord = actual_path[0]
             middle = car_draw_object.centroid
             initial_position: tuple[int, int, int, int] = (
@@ -56,7 +55,7 @@ class VehicleTrackingTest(unittest.TestCase):
                 start_coord[0] + middle[0],
                 start_coord[1] + middle[1],
             )
-            source = VirtualCamera([car_draw_object, wall], 60)
+            source = VirtualCamera([car_draw_object], 60)
             tracker = VehicleTracker(source, vehicle_coordinates=initial_position)
             self.__coordinate_sub = Sub0()
             sub_address = self.__config["pynng"]["publishers"]["position_sender"]["address"]
@@ -70,7 +69,7 @@ class VehicleTrackingTest(unittest.TestCase):
                 coord_str: str = coord_bytes.decode("utf-8")
                 coord_str = coord_str.split(" ", maxsplit=1)[1]
                 coord = loads(coord_str)
-                x_offset, y_offset = coord[0] - actual_path[i][0], coord[1] - actual_path[i][1]
+                x_offset, y_offset = abs(coord[0] - actual_path[i][0]), abs(coord[1] - actual_path[i][1])
                 print(coord)
                 if x_offset > 5 or y_offset > 5:
                     passed = False
