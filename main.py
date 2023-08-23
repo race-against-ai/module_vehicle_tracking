@@ -13,6 +13,7 @@ if __name__ == "__main__":
         starting_tracker_config = config["starting_tracker"]
         pynng_subscriber_config = config["pynng"]["subscribers"]
 
+    source: VideoFileSource | CameraStreamSource
     if starting_tracker_config["use_camera_stream"]:
         source = CameraStreamSource(pynng_subscriber_config["camera_frame_receiver"]["address"])
     else:
