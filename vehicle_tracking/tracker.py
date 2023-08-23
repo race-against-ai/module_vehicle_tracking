@@ -1,7 +1,7 @@
 # Copyright (C) 2023, NG:ITL
 from vehicle_tracking.image_sources import VideoFileSource, CameraStreamSource
 from tests.mocks.virtual_camera import VirtualCamera
-from typing import List, Any, Tuple
+from typing import Any
 from json import load, dumps
 from pathlib import Path
 from pynng import Pub0
@@ -15,7 +15,7 @@ CURRENT_DIR = Path(__file__).parent
 
 
 # Static Calculation Functions
-def calculate_distance(rect1: List[int], rect2: List[int]) -> int:
+def calculate_distance(rect1: list[int], rect2: list[int]) -> int:
     """Calculates the distance between the middle points of two rectangles.
 
     Args:
@@ -45,7 +45,7 @@ class VehicleTracker:
         image_source: VideoFileSource | CameraStreamSource | VirtualCamera,
         show_tracking_view: bool = True,
         record_video: bool = False,
-        vehicle_coordinates: None | Tuple[int, int, int, int] = None,
+        vehicle_coordinates: None | tuple[int, int, int, int] = None,
         config_path: Path = CURRENT_DIR.parent / "vehicle_tracking_config.json",
     ):
         """Defines the settings and initializes everything.
@@ -61,7 +61,7 @@ class VehicleTracker:
         self.__show_tracking_view = show_tracking_view
         self.__record_video = record_video
         self.__last_timestamp = time()
-        self.__previous_contours: List[Any] = []
+        self.__previous_contours: list[Any] = []
         self.__lower_orange = np.array((0, 0, 100), np.uint8)
         self.__upper_orange = np.array((55, 115, 225), np.uint8)
 
@@ -129,7 +129,7 @@ class VehicleTracker:
         contours, _ = cv2.findContours(self.__processed_frame, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         contours = sorted(contours, key=sorting_function_contours, reverse=True)
 
-        good_contours: List[Any] = []
+        good_contours: list[Any] = []
         for contour in contours:
             rect1 = cv2.boundingRect(contour)
             if rect1[2] * rect1[3] < 100:
@@ -153,7 +153,7 @@ class VehicleTracker:
         if self.__current_contours == 0:
             return
         else:
-            prediction: Tuple[int, List[int]] = (-1, [0, 0, 0, 0])
+            prediction: tuple[int, list[int]] = (-1, [0, 0, 0, 0])
             for contour in self.__current_contours:
                 x, y, w, h = cv2.boundingRect(contour)
                 distance = calculate_distance(self.__bbox, [x, y, w, h])
