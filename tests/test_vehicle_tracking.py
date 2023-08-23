@@ -70,7 +70,6 @@ class VehicleTrackingTest(unittest.TestCase):
                 coord_str = coord_str.split(" ", maxsplit=1)[1]
                 coord = loads(coord_str)
                 x_offset, y_offset = abs(coord[0] - actual_path[i][0]), abs(coord[1] - actual_path[i][1])
-                print(coord)
                 if x_offset > 5 or y_offset > 5:
                     passed = False
                     break
