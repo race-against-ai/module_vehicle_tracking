@@ -55,20 +55,22 @@ class VehicleTrackingTest(unittest.TestCase):
                 start_coord[0] + middle[0],
                 start_coord[1] + middle[1],
             )
+
             source = VirtualCamera([car_draw_object], 60)
             tracker = VehicleTracker(source, vehicle_coordinates=initial_position)
-            self.__coordinate_sub = Sub0()
             sub_address = self.__config["pynng"]["publishers"]["position_sender"]["address"]
             sub_topic = self.__config["pynng"]["publishers"]["position_sender"]["topics"]["coords_image"]
-            self.__coordinate_sub.subscribe(sub_topic)
-            self.__coordinate_sub.dial(sub_address)
+            self.__coordinate_sub = Sub0(topics=sub_topic, dial=sub_address)
+
             passed = True
             for i in range(len(actual_path)):
                 tracker.step()
+
                 coord_bytes: bytes = self.__coordinate_sub.recv()
                 coord_str: str = coord_bytes.decode("utf-8")
                 coord_str = coord_str.split(" ", maxsplit=1)[1]
                 coord = loads(coord_str)
+
                 x_offset, y_offset = abs(coord[0] - actual_path[i][0]), abs(coord[1] - actual_path[i][1])
                 if x_offset > 5 or y_offset > 5:
                     passed = False
