@@ -1,6 +1,6 @@
 # Copyright (C) 2023, NG:ITL
 from pathlib import Path
-from json import dump, dumps
+from json import dumps
 import numpy as np
 import pyperclip
 import cv2
@@ -61,7 +61,7 @@ class PathDefiner:
 
     def __save_path(self) -> None:
         """Saves the path to the clipboard of the user."""
-        dumped = dumps(self.__points)
+        dumped = dumps(self.__points, indent=4)
         replaced = "[\n\t" + dumped[1:-1].replace("[", "(").replace("]", ")").replace("), (", "),\n\t(") + "\n]"
         pyperclip.copy(replaced)
 
