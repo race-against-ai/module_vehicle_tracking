@@ -3,7 +3,7 @@ from mocks.virtual_camera import VirtualCamera, ToDrawObject, get_path_pixels
 from vehicle_tracking.tracker import VehicleTracker
 from pathlib import Path
 from pynng import Sub0
-from json import load, dump
+from json import load, loads, dump
 from typing import Any
 import unittest
 
