@@ -65,6 +65,16 @@ class ToDrawObject:
         self.path = path
         self.iteration = 0
         self.__unrounded_iteration: float = 0
+        x_points: list[int] = []
+        y_points: list[int] = []
+        for point in self.shape:
+            x_points.append(point[0])
+            y_points.append(point[1])
+        x_points.sort()
+        y_points.sort()
+        x = x_points[-1]
+        y = y_points[-1]
+        self.centroid = (x // 2, y // 2)
 
     def get_next_position(self) -> tuple[int, int]:
         """Get the next position of the object.
@@ -99,21 +109,13 @@ class VirtualCamera:
         self.__current_frame = self.__next_frame.copy()
         self.__next_frame = np.zeros(self.frame_size, dtype=np.uint8)
         for to_draw_object in self.to_draw_objects:
-            cv2.polylines(self.__next_frame, [np.array(to_draw_object.path)], True, (255, 255, 255))
-        for to_draw_object in self.to_draw_objects:
             pX, pY = to_draw_object.get_next_position()
-            shape_points = to_draw_object.shape.copy()
-            x_points, y_points = [p[0] for p in shape_points], [p[1] for p in shape_points]
-            x_points.sort(reverse=True)
-            y_points.sort(reverse=True)
-            centroid = (x_points[0] // 2, y_points[0] // 2)
             cv2.fillPoly(
                 self.__next_frame,
-                [np.array(shape_points)],
+                [np.array(to_draw_object.shape)],
                 to_draw_object.color,
-                offset=(pX - centroid[0], pY - centroid[1]),
+                offset=(pX - to_draw_object.centroid[0], pY - to_draw_object.centroid[1]),
             )
-            cv2.circle(self.__next_frame, (pX, pY), 3, (0, 0, 255), -1)
 
     def read_new_frame(self) -> np.ndarray:
         """Read a new frame from the camera.
@@ -146,5 +148,6 @@ if __name__ == "__main__":
     while True:
         frame = cam.read_new_frame()
         cv2.imshow("frame", frame)
+        cv2.imwrite("frame.png", frame)
         if cv2.waitKey(1) & 0xFF == ord("q"):
             break
