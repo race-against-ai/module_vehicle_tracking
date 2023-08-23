@@ -46,6 +46,7 @@ class VehicleTracker:
         show_tracking_view: bool = True,
         record_video: bool = False,
         vehicle_coordinates: None | Tuple[int, int, int, int] = None,
+        config_path: Path = CURRENT_DIR.parent / "vehicle_tracking_config.json",
     ):
         """Defines the settings and initializes everything.
 
@@ -54,44 +55,42 @@ class VehicleTracker:
             record_video (bool, optional): Decides whether to record a video or not. Defaults to False.
             video_path (str, optional): If set will use the video instead of the camera stream. Defaults to "".
             vehicle_coordinates (None | Tuple[int, int, int, int], optional): If set it will not prompt the selection of the car. Defaults to None. (Testing)
+            config_path (Path, optional): The path to the config file. Defaults to CURRENT_DIR.parent / "vehicle_tracking_config.json".
         """
         self.__image_source = image_source
         self.__show_tracking_view = show_tracking_view
         self.__record_video = record_video
         self.__last_timestamp = time()
         self.__previous_contours: List[Any] = []
-        self.__lower_orange = np.array((0, 0, 100))
-        self.__upper_orange = np.array((55, 115, 225))
+        self.__lower_orange = np.array((0, 0, 100), np.uint8)
+        self.__upper_orange = np.array((55, 115, 225), np.uint8)
 
         self.__region_of_interest: np.ndarray | None = None
-        with open(CURRENT_DIR.parent / "vehicle_tracking_config.json", "r") as f:
+        with open(config_path, "r") as f:
             config = load(f)
             self.__position_sender_link: str = config["pynng"]["publishers"]["position_sender"]["address"]
             self.__position_sender_topics: dict[str, str] = config["pynng"]["publishers"]["position_sender"]["topics"]
             self.__processed_frame_link: str = config["pynng"]["publishers"]["processed_image_sender"]["address"]
-            self.__camera_image_link: str = config["pynng"]["subscribers"]["camera_frame_receiver"]["address"]
             if "roi_points" in config and len(config["roi_points"]) >= 3:
                 self.__region_of_interest = np.array(config["roi_points"])
             else:
                 print(
-                    "No region of interest found. Please use the 'roi_definer.py' to select the region of interest and restart the tracker."
+                    f"No region of interest found. Please use the '{CURRENT_DIR / 'roi_definer.py'}' to select the region of interest and restart the tracker."
                 )
 
-        self.__position_sender = Pub0()
-        self.__position_sender.listen(self.__position_sender_link)
-
-        self.__frame_sender = Pub0()
-        self.__frame_sender.listen(self.__processed_frame_link)
+        self.__position_sender = Pub0(listen=self.__position_sender_link)
+        self.__frame_sender = Pub0(listen=self.__processed_frame_link)
 
         if record_video:
             size = image_source.frame_size[:2][::-1]
             self.__output_video = cv2.VideoWriter("output.mp4", cv2.VideoWriter_fourcc(*"mp4v"), 30, size)
 
         self.__read_new_frame()
-        if vehicle_coordinates == None:
-            self.__bbox = cv2.selectROI("Car Tracking", self.__frame)
+        if vehicle_coordinates:
+            x, y, w, h = vehicle_coordinates
+            self.__bbox = [x, y, w, h]
         else:
-            self.__bbox
+            self.__bbox = cv2.selectROI("Car Tracking", self.__frame)
 
     # Called by self.main Functions
     def __read_new_frame(self) -> None:
@@ -204,7 +203,7 @@ class VehicleTracker:
     def __send_bbox_coordinates(self):
         """Sends the middle coordinates of the car using pynng."""
         middle = (self.__bbox[0] + floor(self.__bbox[2] / 2), self.__bbox[1] + floor(self.__bbox[3] / 2))
-        str_with_topic = self.__position_sender_topics["coords_image"] + ": " + dumps(middle)
+        str_with_topic = self.__position_sender_topics["coords_image"] + " " + dumps(middle)
         self.__position_sender.send(str_with_topic.encode("utf-8"))
 
     def __send_processed_frame(self):
