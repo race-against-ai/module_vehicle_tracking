@@ -13,7 +13,7 @@ setup(
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
     author="NGITL",
-    author_email="666arnehilbig@gmail.com",
+    author_email="arne.hilbig@gmail.com",
     description=("RAAI Module Vehicle Tracking for tracking the current position of the vehicle."),
     license="GPL 3.0",
     keywords="vehicle tracking",
