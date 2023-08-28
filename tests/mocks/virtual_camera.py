@@ -59,6 +59,14 @@ class ToDrawObject:
         speed: float,
         path: list[tuple[int, int]],
     ) -> None:
+        """A class to represent an object to draw on the virtual camera.
+
+        Args:
+            color (tuple[int, int, int]): The color of the object to be drawn.
+            shape (list[tuple[int, int]]): The shape of the object to be drawn.
+            speed (float): The increment of the index, rounded down, of the path to be used each frame.
+            path (list[tuple[int, int]]): The path that the object will follow.
+        """        
         self.color = color
         self.shape = shape
         self.speed = speed
