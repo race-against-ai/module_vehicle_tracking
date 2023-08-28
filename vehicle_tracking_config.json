@@ -26,7 +26,7 @@
     },
     "roi_points": [],
     "starting_tracker": {
-        "use_camera_stream": false,
-        "video_file_path": "resources/test_video_1.h265"
+        "use_camera_stream": true,
+        "video_file_path": ""
     }
 }
