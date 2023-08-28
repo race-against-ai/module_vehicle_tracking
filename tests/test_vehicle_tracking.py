@@ -57,7 +57,7 @@ class VehicleTrackingTest(unittest.TestCase):
             )
 
             source = VirtualCamera([car_draw_object], 60)
-            tracker = VehicleTracker(source, vehicle_coordinates=initial_position)
+            tracker = VehicleTracker(source, show_tracking_view=False, vehicle_coordinates=initial_position)
             sub_address = self.__config["pynng"]["publishers"]["position_sender"]["address"]
             sub_topic = self.__config["pynng"]["publishers"]["position_sender"]["topics"]["coords_image"]
             self.__coordinate_sub = Sub0(topics=sub_topic, dial=sub_address)
