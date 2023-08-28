@@ -55,4 +55,3 @@ Currently there is only 1 unit test for the [vehicle_tracking.py](vehicle_tracki
 ```bash
 tox -e tests
 ```
-
