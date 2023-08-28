@@ -1,13 +1,8 @@
 # Copyright (C) 2023, NG:ITL
-from pathlib import Path
 from json import dumps
 import numpy as np
 import pyperclip
 import cv2
-
-
-# Constants
-CURRENT_DIR = Path(__file__).parent
 
 
 # Classes
@@ -62,7 +57,7 @@ class PathDefiner:
     def __save_path(self) -> None:
         """Saves the path to the clipboard of the user."""
         dumped = dumps(self.__points, indent=4)
-        replaced = "[\n\t" + dumped[1:-1].replace("[", "(").replace("]", ")").replace("), (", "),\n\t(") + "\n]"
+        replaced = "[\n\t" + dumped[1:-1].replace("[", "(").replace("]", ")").replace("), (", "),\n\t(") + "]"
         pyperclip.copy(replaced)
 
     def run(self) -> None:
