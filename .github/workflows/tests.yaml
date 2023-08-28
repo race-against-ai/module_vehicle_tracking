@@ -3,7 +3,7 @@ run-name: unittests
 on: [push]
 jobs:
   run-unittests:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v4
