@@ -4,7 +4,8 @@
             "position_sender": {
                 "address": "ipc:///tmp/RAAI/vehicle_coordinates.ipc",
                 "topics": {
-                    "coords_image": "pixel_coordinates"
+                    "coords_image": "pixel_coordinates",
+                    "coords_world": "world_coordinates"
                 }
             },
             "processed_image_sender": {
@@ -24,9 +25,9 @@
         "client_name": "raai_download",
         "client_password": "mJpyehF5M5ehWJQKBsxOcW3ctn2tm4Ip"
     },
-    "roi_points": [],
     "starting_tracker": {
         "use_camera_stream": true,
         "video_file_path": ""
-    }
+    },
+    "roi_points": []
 }
