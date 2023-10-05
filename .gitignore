@@ -159,9 +159,12 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 .idea/
 
-vehicle_tracking/region_of_interest.json
-
+# Ignore downloaded Resources
 resources/*
 !resources/download_resources.py
 
+# Ignore VSCdoe settings
 .vscode
+
+# Ignore tests/tmp folder
+tests/tmp
