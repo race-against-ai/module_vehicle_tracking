@@ -1,9 +1,14 @@
+"""A program that allows the user to define the region of interest for the vehicle tracking."""
 # Copyright (C) 2023, NG:ITl
-from image_sources import CameraStreamSource, VideoFileSource
+
 from json import dump, load
 from pathlib import Path
+import sys
+
 import numpy as np
 import cv2
+
+from image_sources import CameraStreamSource, VideoFileSource
 
 
 # Constants
@@ -12,14 +17,18 @@ CURRENT_DIR = Path(__file__).parent
 
 # Classes
 class ROIDefiner:
-    def __init__(self, image_source: CameraStreamSource | VideoFileSource) -> None:
-        """ROI Definer class.
+    """A class that allows the user to define the region of interest for the vehicle tracking."""
+    def __init__(self, img_source: CameraStreamSource | VideoFileSource) -> None:
+        """Constructor for the ROIDefiner class.
 
         Args:
             image_source (CameraStreamSource | VideoFileSource): Image source to get frames from.
         """
-        self.__image_source = image_source
+        self.__image_source = img_source
         self.__roi_points: list[tuple[int, int]] = []
+
+        self.__point_drawer_frame: np.ndarray
+        self.__roi_frame: np.ndarray
 
         cv2.namedWindow("Point Drawer")
         cv2.namedWindow("Region Of Interest")
@@ -67,16 +76,16 @@ class ROIDefiner:
         if cv2.waitKey(1) & 0xFF == ord("q"):
             cv2.destroyAllWindows()
             self.__save_roi()
-            exit(-1)
+            sys.exit(0)
 
     def __save_roi(self) -> None:
         """Saves the ROI to the config file."""
         if len(self.__roi_points) < 3:
             raise ValueError("ROI not saved. You need at least 3 points to define a region of interest.")
-        with open(CURRENT_DIR.parent / "vehicle_tracking_config.json", "r") as f:
+        with open(CURRENT_DIR.parent / "vehicle_tracking_config.json", "r", encoding="utf-8") as f:
             config = load(f)
             config["roi_points"] = self.__roi_points
-        with open(CURRENT_DIR.parent / "vehicle_tracking_config.json", "w") as f:
+        with open(CURRENT_DIR.parent / "vehicle_tracking_config.json", "w", encoding="utf-8") as f:
             dump(config, f, indent=4)
 
     def run(self) -> None:
