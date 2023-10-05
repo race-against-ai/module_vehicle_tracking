@@ -1,14 +1,17 @@
+"""The main script calling the tracker."""
 # Copyright (C) 2023, NG:ITL
-from vehicle_tracking.image_sources import CameraStreamSource, VideoFileSource
-from vehicle_tracking.tracker import VehicleTracker
+
 from pathlib import Path
 from typing import Any
 from json import load
 
+from vehicle_tracking.image_sources import CameraStreamSource, VideoFileSource
+from vehicle_tracking.tracker import VehicleTracker
+
 
 if __name__ == "__main__":
     config_path = Path().cwd() / "vehicle_tracking_config.json"
-    with open(config_path, "r") as config_file:
+    with open(config_path, "r", encoding="utf-8") as config_file:
         config: dict[str, Any] = load(config_file)
         starting_tracker_config = config["starting_tracker"]
         pynng_subscriber_config = config["pynng"]["subscribers"]
@@ -19,6 +22,5 @@ if __name__ == "__main__":
     else:
         source = VideoFileSource(config_path.parent / starting_tracker_config["video_file_path"], 1000)
     tracker = VehicleTracker(source)
-    print("x")
     while True:
         tracker.step()

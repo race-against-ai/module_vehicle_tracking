@@ -1,5 +1,8 @@
+"""A virtual camera to test the drawing of objects on a frame."""
 # Copyright (C) 2023, NG:ITL
+
 from time import sleep
+
 import numpy as np
 import cv2
 
@@ -15,36 +18,36 @@ def get_path_pixels(path: list[tuple[int, int]] | list[list[int]]) -> list[tuple
         list[tuple[int, int]]: The pixels in the path.
     """
 
-    def get_line_pixels(x0: int, y0: int, x1: int, y1: int) -> list[tuple[int, int]]:
-        dx = abs(x1 - x0)
-        dy = abs(y1 - y0)
-        sx = 1 if x0 < x1 else -1
-        sy = 1 if y0 < y1 else -1
-        err = dx - dy
+    def get_line_pixels(x_start: int, y_start: int, x_end: int, y_end: int) -> list[tuple[int, int]]:
+        delta_x = abs(x_end - x_start)
+        delta_y = abs(y_end - y_start)
+        step_x = 1 if x_start < x_end else -1
+        step_y = 1 if y_start < y_end else -1
+        error = delta_x - delta_y
 
         pixels = []
         while True:
-            pixels.append((x0, y0))
+            pixels.append((x_start, y_start))
 
-            if x0 == x1 and y0 == y1:
+            if x_start == x_end and y_start == y_end:
                 break
 
-            e2 = 2 * err
-            if e2 > -dy:
-                err -= dy
-                x0 += sx
-            if e2 < dx:
-                err += dx
-                y0 += sy
+            double_error = 2 * error
+            if double_error > -delta_y:
+                error -= delta_y
+                x_start += step_x
+            if double_error < delta_x:
+                error += delta_x
+                y_start += step_y
 
         return pixels
 
     pixels: list[tuple[int, int]] = []
     num_points = len(path)
     for i in range(num_points):
-        x0, y0 = path[i]
-        x1, y1 = path[(i + 1) % num_points]
-        pixels.extend(get_line_pixels(x0, y0, x1, y1))
+        start_x, start_y = path[i]
+        end_x, end_y = path[(i + 1) % num_points]
+        pixels.extend(get_line_pixels(start_x, start_y, end_x, end_y))
 
     formatted_pixels: list[tuple[int, int]] = [(x, y) for x, y in pixels]
     return formatted_pixels
@@ -52,6 +55,8 @@ def get_path_pixels(path: list[tuple[int, int]] | list[list[int]]) -> list[tuple
 
 # Class
 class ToDrawObject:
+    """A class to represent an object to draw by the virtual camera."""
+
     def __init__(
         self,
         color: tuple[int, int, int],
@@ -59,13 +64,13 @@ class ToDrawObject:
         speed: float,
         path: list[tuple[int, int]],
     ) -> None:
-        """A class to represent an object to draw on the virtual camera.
+        """Create a ToDrawObject.
 
         Args:
-            color (tuple[int, int, int]): The color of the object to be drawn.
-            shape (list[tuple[int, int]]): The shape of the object to be drawn.
-            speed (float): The increment of the index, rounded down, of the path to be used each frame.
-            path (list[tuple[int, int]]): The path that the object will follow.
+            color (tuple[int, int, int]): The color of the object.
+            shape (list[tuple[int, int]]): The shape of the object.
+            speed (float): The speed of the object. (calculated and rounded down for index of path)
+            path (list[tuple[int, int]]): The path of the object.
         """
         self.color = color
         self.shape = shape
@@ -80,9 +85,9 @@ class ToDrawObject:
             y_points.append(point[1])
         x_points.sort()
         y_points.sort()
-        x = x_points[-1]
-        y = y_points[-1]
-        self.centroid = (x // 2, y // 2)
+        biggest_x = x_points[-1]
+        biggest_y = y_points[-1]
+        self.centroid = (biggest_x // 2, biggest_y // 2)
 
     def get_next_position(self) -> tuple[int, int]:
         """Get the next position of the object.
@@ -97,12 +102,14 @@ class ToDrawObject:
 
 
 class VirtualCamera:
+    """A class that draws objects on a frame to allow easy testing."""
+
     def __init__(self, to_draw_objects: list[ToDrawObject], frame_rate: int) -> None:
-        """Create a virtual camera mimicking the behavior of a real camera.
+        """Create a VirtualCamera.
 
         Args:
-            to_draw_objects (list[ToDrawObject]): A list of objects to draw on the camera. The first object bottom, last object top.
-            frame_rate (int): The framerate of the virtual camera.
+            to_draw_objects (list[ToDrawObject]): The objects to draw on the frame.
+            frame_rate (int): The frame rate of the camera.
         """
         self.frame_size: tuple[int, int, int] = (990, 1332, 3)
         self.to_draw_objects = to_draw_objects
@@ -117,12 +124,12 @@ class VirtualCamera:
         self.__current_frame = self.__next_frame.copy()
         self.__next_frame = np.zeros(self.frame_size, dtype=np.uint8)
         for to_draw_object in self.to_draw_objects:
-            pX, pY = to_draw_object.get_next_position()
+            x_pos, y_pos = to_draw_object.get_next_position()
             cv2.fillPoly(
                 self.__next_frame,
                 [np.array(to_draw_object.shape)],
                 to_draw_object.color,
-                offset=(pX - to_draw_object.centroid[0], pY - to_draw_object.centroid[1]),
+                offset=(x_pos - to_draw_object.centroid[0], y_pos - to_draw_object.centroid[1]),
             )
 
     def read_new_frame(self) -> np.ndarray:
@@ -156,6 +163,5 @@ if __name__ == "__main__":
     while True:
         frame = cam.read_new_frame()
         cv2.imshow("frame", frame)
-        cv2.imwrite("frame.png", frame)
         if cv2.waitKey(1) & 0xFF == ord("q"):
             break

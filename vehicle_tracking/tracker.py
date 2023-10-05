@@ -1,14 +1,20 @@
+"""This module is used to track the car in the camera stream/video."""
 # Copyright (C) 2023, NG:ITL
-from vehicle_tracking.image_sources import VideoFileSource, CameraStreamSource
-from tests.mocks.virtual_camera import VirtualCamera
-from typing import Any
+
 from json import load, dumps
 from pathlib import Path
-from pynng import Pub0
+from typing import Any
 from math import floor
 from time import time
+
+from pynng import Pub0
 import numpy as np
 import cv2
+
+from vehicle_tracking.image_sources import VideoFileSource, CameraStreamSource
+from tests.mocks.virtual_camera import VirtualCamera
+# from vehicle_tracking.topview_transformation import TopViewTransformation
+
 
 # Constants
 CURRENT_DIR = Path(__file__).parent
@@ -39,7 +45,7 @@ def sorting_function_contours(contour) -> int:
 
 # Classes
 class VehicleTracker:
-    # Initialization
+    """This class is used to track the car in the camera stream/video."""
     def __init__(
         self,
         image_source: VideoFileSource | CameraStreamSource | VirtualCamera,
@@ -47,7 +53,7 @@ class VehicleTracker:
         record_video: bool = False,
         vehicle_coordinates: None | tuple[int, int, int, int] = None,
         config_path: Path = CURRENT_DIR.parent / "vehicle_tracking_config.json",
-    ):
+    ) -> None:
         """Defines the settings and initializes everything.
 
         Args:
@@ -65,8 +71,12 @@ class VehicleTracker:
         self.__lower_orange = np.array((0, 0, 100), np.uint8)
         self.__upper_orange = np.array((55, 115, 225), np.uint8)
 
+        self.__visualized_frame: np.ndarray
+        self.__processed_frame: np.ndarray
+        self.__current_contours: list[Any]
+
         self.__region_of_interest: np.ndarray | None = None
-        with open(config_path, "r") as f:
+        with open(config_path, "r", encoding="utf-8") as f:
             config = load(f)
             self.__position_sender_link: str = config["pynng"]["publishers"]["position_sender"]["address"]
             self.__position_sender_topics: dict[str, str] = config["pynng"]["publishers"]["position_sender"]["topics"]
@@ -135,7 +145,7 @@ class VehicleTracker:
             if rect1[2] * rect1[3] < 100:
                 break
             to_add = True
-            for good_contour in good_contours:
+            for good_contour in good_contours.copy():
                 rect2 = cv2.boundingRect(good_contour)
                 if calculate_distance(rect1, rect2) <= 75:
                     to_add = False
@@ -157,7 +167,7 @@ class VehicleTracker:
             for contour in self.__current_contours:
                 x, y, w, h = cv2.boundingRect(contour)
                 distance = calculate_distance(self.__bbox, [x, y, w, h])
-                if self.__previous_contours == [] or len(self.__previous_contours) >= len(self.__current_contours):
+                if not self.__previous_contours or len(self.__previous_contours) >= len(self.__current_contours):
                     if prediction == (-1, [0, 0, 0, 0]) or distance < prediction[0]:
                         prediction = (distance, [x, y, w, h])
                 else:
@@ -200,20 +210,23 @@ class VehicleTracker:
             if key == ord("q"):
                 raise KeyboardInterrupt("User pressed 'q' to stop the visualization.")
 
-    def __send_bbox_coordinates(self):
+    def __send_bbox_coordinates(self) -> None:
         """Sends the middle coordinates of the car using pynng."""
         middle = (self.__bbox[0] + floor(self.__bbox[2] / 2), self.__bbox[1] + floor(self.__bbox[3] / 2))
         str_with_topic = self.__position_sender_topics["coords_image"] + " " + dumps(middle)
         self.__position_sender.send(str_with_topic.encode("utf-8"))
 
-    def __send_processed_frame(self):
+    def __send_world_coordinates(self) -> None:
+        """Sends the world coordinates of the car using pynng."""
+
+    def __send_processed_frame(self) -> None:
         """Sends the processed frame to time_tracking using pynng."""
         np_frame = np.array(self.__visualized_frame)
         frame_bytes = np_frame.tobytes()
         self.__frame_sender.send(frame_bytes)
 
     # Main Function
-    def step(self):
+    def step(self) -> None:
         """Is an infinite loop that goes through the camera stream/video."""
         self.__read_new_frame()
         self.__process_image()
@@ -224,4 +237,5 @@ class VehicleTracker:
         self.__show_frame()
         self.__send_bbox_coordinates()
         self.__send_processed_frame()
+        self.__send_world_coordinates()
         self.__create_timestamp()
