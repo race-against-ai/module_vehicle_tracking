@@ -18,6 +18,7 @@ CURRENT_DIR = Path(__file__).parent
 # Classes
 class ROIDefiner:
     """A class that allows the user to define the region of interest for the vehicle tracking."""
+
     def __init__(self, img_source: CameraStreamSource | VideoFileSource) -> None:
         """Constructor for the ROIDefiner class.
 

@@ -13,6 +13,7 @@ import cv2
 
 from vehicle_tracking.image_sources import VideoFileSource, CameraStreamSource
 from tests.mocks.virtual_camera import VirtualCamera
+
 # from vehicle_tracking.topview_transformation import TopViewTransformation
 
 
@@ -46,6 +47,7 @@ def sorting_function_contours(contour) -> int:
 # Classes
 class VehicleTracker:
     """This class is used to track the car in the camera stream/video."""
+
     def __init__(
         self,
         image_source: VideoFileSource | CameraStreamSource | VirtualCamera,
