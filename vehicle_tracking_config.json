@@ -1,4 +1,8 @@
 {
+    "starting_tracker": {
+        "use_camera_stream": true,
+        "video_file_path": ""
+    },
     "pynng": {
         "publishers": {
             "position_sender": {
@@ -25,9 +29,23 @@
         "client_name": "raai_download",
         "client_password": "mJpyehF5M5ehWJQKBsxOcW3ctn2tm4Ip"
     },
-    "starting_tracker": {
-        "use_camera_stream": true,
-        "video_file_path": ""
+    "coordinate_transform": {
+        "top_left": {
+            "real_world_points": [],
+            "image_points": []
+        },
+        "top_right": {
+            "real_world_points": [],
+            "image_points": []
+        },
+        "bottom_left": {
+            "real_world_points": [],
+            "image_points": []
+        },
+        "bottom_right": {
+            "real_world_points": [],
+            "image_points": []
+        }
     },
     "roi_points": []
 }
