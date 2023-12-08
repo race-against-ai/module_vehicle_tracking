@@ -1,64 +1,77 @@
-"""This module contains the TopViewTransformation class which is used to transform a point from the camera image to coordinates in meters in the real world.ye"""
+"""Provides a class for transforming points between image and world coordinates."""
 # Copyright (C) 2023, NG:ITL
-from typing import NamedTuple
-import numpy as np
+
 import cv2
+import numpy as np
 
 
-class TransformationPoint(NamedTuple):
-    """A point in the camera image and the corresponding point in the world coordinate system.
+class TopviewTransformation:
+    """Transforms a camera point to a world coordinate and vice versa."""
 
-    Args:
-        camera_image_point (tuple[int, int]): The point in the camera image.
-        world_coordinate_point (tuple[float, float]): The corresponding point in the real world."""
+    def __init__(self) -> None:
+        self.__image_points: dict[str, tuple[int, int]] = {
+            "top_left": (0, 0),
+            "top_right": (0, 0),
+            "bottom_left": (0, 0),
+            "bottom_right": (0, 0),
+        }
+        self.__world_points: dict[str, tuple[float, float]] = {
+            "top_left": (0, 0),
+            "top_right": (0, 0),
+            "bottom_left": (0, 0),
+            "bottom_right": (0, 0),
+        }
+        self.__image_to_world_matrix = cv2.getPerspectiveTransform(
+            np.array(list(self.__image_points.values()), dtype=np.float32),
+            np.array(list(self.__world_points.values()), dtype=np.float32),
+        )
+        self.__world_to_image_matrix = cv2.getPerspectiveTransform(
+            np.array(list(self.__world_points.values()), dtype=np.float32),
+            np.array(list(self.__image_points.values()), dtype=np.float32),
+        )
 
-    camera_image_point: tuple[int, int]
-    world_coordinate_point: tuple[float, float]
-
-
-class TopViewTransformation:
-    """A class that transforms a point from the camera image to coordinates in meters in the real world."""
-
-    def __init__(
-        self,
-        top_left_point: TransformationPoint,
-        top_right_point: TransformationPoint,
-        bottom_left_point: TransformationPoint,
-        bottom_right_point: TransformationPoint,
+    def set_transformation_point(
+        self, point_name: str, image_coords: tuple[int, int], world_coords: tuple[float, float]
     ) -> None:
-        """Constructor for the TopViewTransformation class.
+        """Sets a transformation point.
 
         Args:
-            top_left_point (TransformationPoint): The top left transformation point.
-            top_right_point (TransformationPoint): The top right transformation point.
-            bottom_left_point (TransformationPoint): The bottom left transformation point.
-            bottom_right_point (TransformationPoint): The bottom right transformation point.
+            image_coords (tuple[int, int]): The image coordinates of the transformation point.
+            world_coords (tuple[float, float]): The world coordinates of the transformation point.
         """
-        camera_image_pts = np.array(
-            [
-                list(top_left_point.camera_image_point),
-                list(bottom_left_point.camera_image_point),
-                list(bottom_right_point.camera_image_point),
-                list(top_right_point.camera_image_point),
-            ],
-            dtype=np.float32,
+        self.__image_points[point_name] = image_coords
+        self.__world_points[point_name] = world_coords
+
+        image_points = list(self.__image_points.values())
+        world_points = list(self.__world_points.values())
+        self.__image_to_world_matrix = cv2.getPerspectiveTransform(
+            np.array(image_points, dtype=np.float32), np.array(world_points, dtype=np.float32)
+        )
+        self.__world_to_image_matrix = cv2.getPerspectiveTransform(
+            np.array(world_points, dtype=np.float32), np.array(image_points, dtype=np.float32)
         )
 
-        world_coordinate_system_pts = np.array(
-            [
-                list(top_left_point.world_coordinate_point),
-                list(bottom_left_point.world_coordinate_point),
-                list(bottom_right_point.world_coordinate_point),
-                list(top_right_point.world_coordinate_point),
-            ],
-            dtype=np.float32,
-        )
+    def image_to_world_transform(self, point: tuple[int, int]) -> tuple[float, float]:
+        """Transforms an image point to a world point.
 
-        self.camera_to_world_transformation_matrix = cv2.getPerspectiveTransform(
-            camera_image_pts, world_coordinate_system_pts
-        )
+        Args:
+            point (tuple[int, int]): The image point to transform.
 
-    def transform_camera_point_to_world_coordinate(self, camera_point: tuple[int, int]) -> tuple[float, float]:
-        """Transforms a point from the camera image to coordinates in meters in the real world."""
-        point = np.array([list(camera_point)], dtype=np.float32)
-        return cv2.perspectiveTransform(point[None, :, :], self.camera_to_world_transformation_matrix)
+        Returns:
+            tuple[float, float]: The world point.
+        """
+        points = cv2.perspectiveTransform(np.array([[point]], dtype=np.float32), self.__image_to_world_matrix)[0][0]
+        points = (round(points[0], 3), round(points[1], 3))
+        return points
+
+    def world_to_image_transform(self, point: tuple[float, float]) -> tuple[int, int]:
+        """Transforms a world point to an image point.
+
+        Args:
+            point (tuple[float, float]): The world point to transform.
+
+        Returns:
+            tuple[int, int]: The image point.
+        """
+        points = cv2.perspectiveTransform(np.array([[point]], dtype=np.float32), self.__world_to_image_matrix)[0][0]
+        return (int(points[0]), int(points[1]))
