@@ -28,7 +28,8 @@ class VehicleTrackingTest(unittest.TestCase):
     def setUp(self) -> None:
         self.__config_path = CURRENT_DIR.parent / "vehicle_tracking_config.json"
         self.__testing_config_path = CURRENT_DIR / "tmp/vehicle_tracking_config.json"
-        mkdir(self.__testing_config_path.parent)
+        if not self.__testing_config_path.parent.exists():
+            mkdir(self.__testing_config_path.parent)
 
         with open(self.__config_path, "r", encoding="utf-8") as config_file:
             self.__config = load(config_file)
@@ -70,6 +71,7 @@ class VehicleTrackingTest(unittest.TestCase):
             show_tracking_view=False,
             vehicle_coordinates=initial_position,
             config_path=self.__testing_config_path,
+            testing=True,
         )
         position_sender = self.__config["pynng"]["publishers"]["position_sender"]
         sub_address = position_sender["address"]
@@ -77,7 +79,11 @@ class VehicleTrackingTest(unittest.TestCase):
         coordinate_sub = Sub0(topics=sub_topic, dial=sub_address)
 
         passed = True
-        for i, _ in enumerate(actual_path):
+        # x = 0
+        # print(len(actual_path))
+        for point in actual_path:
+            # print(x)
+            # x += 1
             tracker.step()
 
             coord_bytes: bytes = coordinate_sub.recv()
@@ -85,8 +91,8 @@ class VehicleTrackingTest(unittest.TestCase):
             coord_str = coord_str.split(" ", maxsplit=1)[1]
             coord = loads(coord_str)
 
-            x_offset = abs(coord[0] - actual_path[i][0])
-            y_offset = abs(coord[1] - actual_path[i][1])
+            x_offset = abs(coord[0] - point[0])
+            y_offset = abs(coord[1] - point[1])
             if x_offset > 5 or y_offset > 5:
                 passed = False
                 break
