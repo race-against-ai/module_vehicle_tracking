@@ -61,8 +61,7 @@ class TopviewTransformation:
             tuple[float, float]: The world point.
         """
         points = cv2.perspectiveTransform(np.array([[point]], dtype=np.float32), self.__image_to_world_matrix)[0][0]
-        points = (round(points[0], 3), round(points[1], 3))
-        return points
+        return (round(float(points[0]), 3), round(float(points[1]), 3))
 
     def world_to_image_transform(self, point: tuple[float, float]) -> tuple[int, int]:
         """Transforms a world point to an image point.
