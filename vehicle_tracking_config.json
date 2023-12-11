@@ -15,6 +15,10 @@
             "processed_image_sender": {
                 "address": "ipc:///tmp/RAAI/tracker_frame.ipc",
                 "topics": {}
+            },
+            "request_config_sender": {
+                "address": "ipc:///tmp/RAAI/tracker_config.ipc",
+                "topics": {}
             }
         },
         "subscribers": {
