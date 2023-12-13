@@ -36,8 +36,9 @@ class TopviewTransformation:
         """Sets a transformation point.
 
         Args:
-            image_coords (tuple[int, int]): The image coordinates of the transformation point.
-            world_coords (tuple[float, float]): The world coordinates of the transformation point.
+            point_name (str): The name of the point.
+            image_coords (tuple[int, int]): The image coordinates of the point.
+            world_coords (tuple[float, float]): The world coordinates of the point.
         """
         self.__image_points[point_name] = image_coords
         self.__world_points[point_name] = world_coords
