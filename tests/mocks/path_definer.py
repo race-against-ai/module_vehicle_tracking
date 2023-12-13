@@ -11,7 +11,7 @@ import cv2
 
 # Classes
 class PathDefiner:
-    """A class for defining a path for testing purposes.
+    """Allows to define  a testing path with a visual interface.
     The path will, when exited with q, be saved to the users clipboard."""
 
     def __init__(self) -> None:
@@ -57,8 +57,7 @@ class PathDefiner:
         """Checks if the window should be closed and the path saved.
 
         Args:
-            force_quit (bool, optional): If set to true it will exit without input.
-            Defaults to False.
+            force_quit (bool, optional): If set to true it will exit without input. Defaults to False.
         """
         if cv2.waitKey(1) & 0xFF == ord("q") or force_quit:
             cv2.destroyAllWindows()
