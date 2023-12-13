@@ -46,7 +46,7 @@ def sorting_function_contours(contour) -> int:
 
     Returns:
         int: The area of the contour.
-    """    
+    """
     _, _, w, h = cv2.boundingRect(contour)
     return w * h
 
