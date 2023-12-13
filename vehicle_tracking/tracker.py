@@ -162,9 +162,7 @@ class VehicleTracker:
             self.__topview_transformation.set_transformation_point(point, image_point, real_world_point)
 
     def __extract_real_world_points_from_config(self, config, key):
-        if (
-            "real_world" in config
-        ):
+        if "real_world" in config:
             real_world_config = config["real_world"]
             if (
                 len(real_world_config) == 2
@@ -175,10 +173,7 @@ class VehicleTracker:
                 self.__transformation_points[key]["real_world"] = (points[0], points[1])
 
     def __extract_image_points_from_config(self, config, key):
-        
-        if (
-            "image" in config
-        ):
+        if "image" in config:
             image_point_config = config["image"]
             if (
                 len(image_point_config) == 2
