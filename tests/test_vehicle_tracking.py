@@ -79,11 +79,7 @@ class VehicleTrackingTest(unittest.TestCase):
         coordinate_sub = Sub0(topics=sub_topic, dial=sub_address)
 
         passed = True
-        # x = 0
-        # print(len(actual_path))
         for point in actual_path:
-            # print(x)
-            # x += 1
             tracker.step()
 
             coord_bytes: bytes = coordinate_sub.recv()
