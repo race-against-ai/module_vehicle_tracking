@@ -3,13 +3,14 @@
 
 import sys
 from threading import Thread, Event
-from json import load, loads, dumps
+from json import load, loads, dump, dumps
 from pathlib import Path
 from typing import Any
 from math import floor
 from time import time
 
-from pynng import Pub0, Rep0, Timeout
+from pynng.exceptions import Closed
+from pynng import Pub0, Rep0
 import numpy as np
 import cv2
 
@@ -133,7 +134,7 @@ class VehicleTracker:
     def __extract_region_of_interest(self, config: dict[str, Any]) -> None:
         if "roi_points" in config:
             if len(config["roi_points"]) >= 3:
-                if all(isinstance(x, float) and isinstance(y, float) for x, y in config["roi_points"]):
+                if all(isinstance(x, int) and isinstance(y, int) for x, y in config["roi_points"]):
                     points = [(int(x), int(y)) for x, y in config["roi_points"]]
                     self.__region_of_interest = np.array(points)
                 else:
@@ -161,37 +162,40 @@ class VehicleTracker:
             self.__topview_transformation.set_transformation_point(point, image_point, real_world_point)
 
     def __extract_real_world_points_from_config(self, config, key):
-        real_world_config = config["real_world_points"]
         if (
-            "real_world_points" in config
-            and len(real_world_config) == 2
-            and isinstance(real_world_config[0], (float, int))
-            and isinstance(real_world_config[1], (float, int))
+            "real_world" in config
         ):
-            points = real_world_config
-            self.__transformation_points[key]["real_world"] = (points[0], points[1])
-        elif len(real_world_config) != 0:
-            raise TypeError(f"The real_world_points in the {key} transformation are not in the correct format.")
-
-        return config
+            real_world_config = config["real_world"]
+            if (
+                len(real_world_config) == 2
+                and isinstance(real_world_config[0], (float, int))
+                and isinstance(real_world_config[1], (float, int))
+            ):
+                points = real_world_config
+                self.__transformation_points[key]["real_world"] = (points[0], points[1])
 
     def __extract_image_points_from_config(self, config, key):
-        image_point_config = config["image_points"]
+        
         if (
-            "image_points" in config
-            and len(image_point_config) == 2
-            and isinstance(image_point_config[0], int)
-            and isinstance(image_point_config[1], int)
+            "image" in config
         ):
-            points = image_point_config
-            self.__transformation_points[key]["image"] = (points[0], points[1])
-        elif len(image_point_config) != 0:
-            raise TypeError(f"The image_points in the {key} transformation are not in the correct format.")
+            image_point_config = config["image"]
+            if (
+                len(image_point_config) == 2
+                and isinstance(image_point_config[0], int)
+                and isinstance(image_point_config[1], int)
+            ):
+                points = image_point_config
+                self.__transformation_points[key]["image"] = (points[0], points[1])
 
     def __wait_for_request(self) -> None:
         """Waits for a request from the configuration interface."""
         while not self.__stop_awaiting_request.is_set():
-            request = self.__config_handler.recv()
+            try:
+                request = self.__config_handler.recv()
+            except Closed:
+                self.__stop_awaiting_request.set()
+                return
             command, data = request.split(b" ", 1)
             if command == b"REQUEST":
                 conf = {
@@ -215,6 +219,7 @@ class VehicleTracker:
                         int(conf_point["image"][1]),
                     )
                 self.__config_handler.send(b"OK NONE")
+                self.__save_running_config()
             elif command == b"OK":
                 print("Received OK from configurator")
             elif command == b"PING":
@@ -223,8 +228,19 @@ class VehicleTracker:
             else:
                 self.__config_handler.send(b"ERROR Unknown command")
 
+    def __save_running_config(self) -> None:
+        """Saves the current configuration to the config file."""
+        with open(CURRENT_DIR.parent / "vehicle_tracking_config.json", "r", encoding="utf-8") as f:
+            config = load(f)
+            config["roi_points"] = self.__region_of_interest.tolist() if self.__region_of_interest is not None else []
+            config["coordinate_transform"] = self.__transformation_points
+        with open(CURRENT_DIR.parent / "vehicle_tracking_config.json", "w", encoding="utf-8") as f:
+            dump(config, f, indent=4)
+
     def stop_execution(self):
+        """Stops the execution of the program."""
         self.__stop_awaiting_request.set()
+        self.__config_handler.close()
         self.__wait_for_request_thread.join()
         sys.exit(1)
 
