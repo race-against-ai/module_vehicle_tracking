@@ -20,6 +20,7 @@ from tests.mocks.virtual_camera import VirtualCamera
 
 
 CURRENT_DIR = Path(__file__).parent
+VEHICLE_TRACKING_CONFIG_PATH = CURRENT_DIR.parent / "vehicle_tracking_config.json"
 
 
 def calculate_distance(rect1: list[int], rect2: list[int]) -> int:
@@ -38,21 +39,28 @@ def calculate_distance(rect1: list[int], rect2: list[int]) -> int:
 
 
 def sorting_function_contours(contour) -> int:
-    """Sorts the contours by the size of the bounding box."""
+    """Sorts the contours by their area.
+
+    Args:
+        contour (cv2 contour): The contour to be sorted.
+
+    Returns:
+        int: The area of the contour.
+    """    
     _, _, w, h = cv2.boundingRect(contour)
     return w * h
 
 
 class VehicleTracker:
-    """This class is used to track the car in the camera stream/video.
+    """Tracks an orange car in the camera stream/video.
 
     Args:
-        show_tracking_view (bool, optional): Decides whether it should show the tracking or not. Defaults to True.
-        record_video (bool, optional): Decides whether to record a video or not. Defaults to False.
-        video_path (str, optional): If set will use the video instead of the camera stream. Defaults to "".
-        vehicle_coordinates (None | Tuple[int, int, int, int], optional): If set it will not prompt the selection of the car. Defaults to None. (Testing)
-        config_path (Path, optional): The path to the config file. Defaults to CURRENT_DIR.parent / "vehicle_tracking_config.json".
-        testing (bool, optional): If set to True will not print timestamps. Defaults to False.
+        image_source (VideoFileSource | CameraStreamSource | VirtualCamera): The source of the camera stream/video.
+        show_tracking_view (bool, optional): If True shows the tracking view. Defaults to True.
+        record_video (bool, optional): If True records the tracking view to a video. Defaults to False.
+        vehicle_coordinates (None | tuple[int, int, int, int], optional): The coordinates of the car in the first frame. Defaults to None (unit tests).
+        config_path (Path, optional): The path to the config file. Defaults to VEHICLE_TRACKING_CONFIG_PATH.
+        testing (bool, optional): If True the tracker will not send data to the time_tracking module. Defaults to False.
     """
 
     __lower_orange = np.array((0, 0, 100), np.uint8)
@@ -64,13 +72,14 @@ class VehicleTracker:
         show_tracking_view: bool = True,
         record_video: bool = False,
         vehicle_coordinates: None | tuple[int, int, int, int] = None,
-        config_path: Path = CURRENT_DIR.parent / "vehicle_tracking_config.json",
+        config_path: Path = VEHICLE_TRACKING_CONFIG_PATH,
         testing: bool = False,
     ) -> None:
         self.__image_source = image_source
         self.__show_tracking_view = show_tracking_view
         self.__record_video = record_video
         self.__testing = testing
+        self.__config_path = config_path
         self.__last_timestamp = time()
 
         self.__visualized_frame: np.ndarray
@@ -161,7 +170,13 @@ class VehicleTracker:
             real_world_point = self.__transformation_points[point]["real_world"]
             self.__topview_transformation.set_transformation_point(point, image_point, real_world_point)
 
-    def __extract_real_world_points_from_config(self, config, key):
+    def __extract_real_world_points_from_config(self, config: dict[str, Any], key: str):
+        """Extracts the real world points from the config file.
+
+        Args:
+            config (dict[str, Any]): The config dictionary.
+            key (str): The key of the point.
+        """
         if "real_world" in config:
             real_world_config = config["real_world"]
             if (
@@ -172,7 +187,13 @@ class VehicleTracker:
                 points = real_world_config
                 self.__transformation_points[key]["real_world"] = (points[0], points[1])
 
-    def __extract_image_points_from_config(self, config, key):
+    def __extract_image_points_from_config(self, config: dict[str, Any], key: str):
+        """Extracts the image points from the config file.
+
+        Args:
+            config (dict[str, Any]): The config dictionary.
+            key (str): The key of the point.
+        """
         if "image" in config:
             image_point_config = config["image"]
             if (
@@ -225,11 +246,11 @@ class VehicleTracker:
 
     def __save_running_config(self) -> None:
         """Saves the current configuration to the config file."""
-        with open(CURRENT_DIR.parent / "vehicle_tracking_config.json", "r", encoding="utf-8") as f:
+        with open(self.__config_path, "r", encoding="utf-8") as f:
             config = load(f)
             config["roi_points"] = self.__region_of_interest.tolist() if self.__region_of_interest is not None else []
             config["coordinate_transform"] = self.__transformation_points
-        with open(CURRENT_DIR.parent / "vehicle_tracking_config.json", "w", encoding="utf-8") as f:
+        with open(self.__config_path, "w", encoding="utf-8") as f:
             dump(config, f, indent=4)
 
     def stop_execution(self):
@@ -259,7 +280,6 @@ class VehicleTracker:
 
     def __process_image(self) -> None:
         """Processes the image to prepare it for tracking."""
-        # Region of Interest
         if self.__region_of_interest is None or len(self.__region_of_interest) < 3:
             roi = self.__frame
         else:
@@ -267,10 +287,8 @@ class VehicleTracker:
             cv2.fillPoly(mask, [self.__region_of_interest], (255, 255, 255))
             roi = cv2.bitwise_and(self.__frame, mask)
 
-        # Filters color to be mostly orange
         in_range_image = cv2.inRange(roi, self.__lower_orange, self.__upper_orange)
 
-        # Fills all the gaps making more distinct
         kernel = np.ones((10, 10), np.uint8)
         closing = cv2.morphologyEx(in_range_image.astype(np.uint8), cv2.MORPH_CLOSE, kernel)
 
@@ -304,34 +322,32 @@ class VehicleTracker:
         """Makes a prediction of a contour that is most likely the car."""
         if self.__current_contours == 0:
             return
-        else:
-            prediction: tuple[int, list[int]] = (-1, [0, 0, 0, 0])
-            for contour in self.__current_contours:
-                x, y, w, h = cv2.boundingRect(contour)
-                distance = calculate_distance(self.__bbox, [x, y, w, h])
-                if not self.__previous_contours or len(self.__previous_contours) >= len(self.__current_contours):
-                    if prediction == (-1, [0, 0, 0, 0]) or distance < prediction[0]:
-                        prediction = (distance, [x, y, w, h])
-                else:
-                    if distance > 100:
-                        continue
-                    if prediction == (-1, [0, 0, 0, 0]) or distance > prediction[0]:
-                        prediction = (distance, [x, y, w, h])
 
-            if prediction:
-                self.__previous_contours = self.__current_contours
-                self.__bbox = prediction[1]
+        prediction: tuple[int, list[int]] = (-1, [0, 0, 0, 0])
+        for contour in self.__current_contours:
+            x, y, w, h = cv2.boundingRect(contour)
+            distance = calculate_distance(self.__bbox, [x, y, w, h])
+            if not self.__previous_contours or len(self.__previous_contours) >= len(self.__current_contours):
+                if prediction == (-1, [0, 0, 0, 0]) or distance < prediction[0]:
+                    prediction = (distance, [x, y, w, h])
+            else:
+                if distance > 100:
+                    continue
+                if prediction == (-1, [0, 0, 0, 0]) or distance > prediction[0]:
+                    prediction = (distance, [x, y, w, h])
+
+        if prediction:
+            self.__previous_contours = self.__current_contours
+            self.__bbox = prediction[1]
 
     def __visualize_contours(self) -> None:
         """Visualizes the contours with their bounding boxes on the processed frame."""
         self.__visualized_frame = self.__frame.copy()
 
-        # Draws green boxes around each possibility.
         for contour in self.__current_contours:
             x, y, w, h = cv2.boundingRect(contour)
             cv2.rectangle(self.__visualized_frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
-        # Draws a white box around the car
         x, y, w, h = self.__bbox
         cv2.rectangle(self.__visualized_frame, (x, y), (x + w, y + h), (255, 255, 255), 2)
 
@@ -341,11 +357,7 @@ class VehicleTracker:
             self.__output_video.write(self.__visualized_frame)
 
     def __show_frame(self) -> None:
-        """Shows the last visualized frame and allows to exit the application with 'q'.
-
-        Raises:
-            KeyboardInterrupt: If 'q' is pressed uses this to stop the program.
-        """
+        """Shows the tracking view."""
         if self.__show_tracking_view:
             cv2.imshow("Car Tracking", self.__visualized_frame)
             key = cv2.waitKey(1) & 0xFF
@@ -379,7 +391,7 @@ class VehicleTracker:
         self.__frame_sender.send(frame_bytes)
 
     def step(self) -> None:
-        """Is an infinite loop that goes through the camera stream/video."""
+        """Executes one full step of the tracker."""
         self.__read_new_frame()
         self.__process_image()
         self.__search_for_contours()
