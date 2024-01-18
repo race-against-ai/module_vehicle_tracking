@@ -10,17 +10,16 @@ import cv2
 
 
 class VideoFileSource:
-    """An image source which reads images from a file."""
+    """An image source which reads images from a file.
+
+    Args:
+        video_file_filepath (Path): The path of the video to be read from.
+        frame_rate (int): The frame rate of the video.
+    """
 
     def __init__(self, video_file_filepath: Path, frame_rate: int) -> None:
-        """Constructor for the VideoFileSource class.
-
-        Args:
-            video_file_filepath (Path): The path of the video to be read from.
-            frame_rate (int): The frame rate of the video.
-        """
         self.__time_to_sleep = 1 / frame_rate
-        self.__video_capture = cv2.VideoCapture(str(video_file_filepath))
+        self.__video_capture = cv2.VideoCapture(str(video_file_filepath))  # type: ignore[call-arg]
         self.frame_size = self.read_new_frame().shape
 
     def read_new_frame(self) -> np.ndarray:
@@ -40,14 +39,13 @@ class VideoFileSource:
 
 
 class CameraStreamSource:
-    """An image source which reads images from a camera stream."""
+    """An image source which reads images from a camera stream.
+
+    Args:
+        address (str): The pynng address to connect to the camera stream.
+    """
 
     def __init__(self, address: str) -> None:
-        """Constructor for the CameraStreamSource class.
-
-        Args:
-            address (str): The pynng address to connect to the camera stream.
-        """
         self.frame_size = (990, 1332, 3)
         self.__frame_receiver = Sub0()
         self.__frame_receiver.subscribe("")
