@@ -167,3 +167,6 @@ resources
 
 # Ignore tests/tmp folder
 tests/tmp
+
+# Ignore configured ROI
+region_of_interest.json
