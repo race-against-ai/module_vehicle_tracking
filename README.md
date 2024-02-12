@@ -55,3 +55,7 @@ tox -e tests
 ### Config Request
 
 Currently the program uses a while loop and thread for waiting for the request to send the config. You could maybe update the program to be asynchronous.
+
+### Pynng Communication
+
+Check if all the sent data actually gets used.
