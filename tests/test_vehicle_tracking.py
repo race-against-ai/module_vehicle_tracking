@@ -1,49 +1,57 @@
 """Unit tests for the VehicleTracking class."""
 # Copyright (C) 2023, NG:ITL
 
-from os import mkdir, remove, rmdir
 from json import load, loads, dump
 import unittest
 from pathlib import Path
 
 from pynng import Sub0
 
-from mocks.virtual_camera import VirtualCamera, ToDrawObject, get_path_pixels
+from tests.mocks.virtual_camera import VirtualCamera, ToDrawObject, get_path_pixels
 from vehicle_tracking.tracker import VehicleTracker
 
 
-# Constants
 CURRENT_DIR = Path(__file__).parent
 CAR_COLOR = (1, 70, 206)
-
-
-# Reminder: Naming convention for unit tests
-#
-# test_InitialState_PerformedAction_ExpectedResult
+TEMPLATE_CONFIG_PATH = CURRENT_DIR.parent / "vehicle_tracking/templates/tracker_config.json"
+TESTING_CONFIG_PATH = CURRENT_DIR / "tmp/vehicle_tracking_config.json"
+TESTING_REGION_OF_INTEREST_PATH = CURRENT_DIR / "region_of_interest.json"
 
 
 class VehicleTrackingTest(unittest.TestCase):
     """Tests for the VehicleTracking."""
 
     def setUp(self) -> None:
-        self.__config_path = CURRENT_DIR.parent / "vehicle_tracking_config.json"
-        self.__testing_config_path = CURRENT_DIR / "tmp/vehicle_tracking_config.json"
-        if not self.__testing_config_path.parent.exists():
-            mkdir(self.__testing_config_path.parent)
+        if not TESTING_CONFIG_PATH.parent.exists():
+            TESTING_CONFIG_PATH.parent.mkdir()
 
-        with open(self.__config_path, "r", encoding="utf-8") as config_file:
+        with open(TEMPLATE_CONFIG_PATH, "r", encoding="utf-8") as config_file:
             self.__config = load(config_file)
-        with open(self.__testing_config_path, "w", encoding="utf-8") as config_file:
+        with open(TESTING_CONFIG_PATH, "w", encoding="utf-8") as config_file:
             conf = self.__config.copy()
-            conf["roi_points"] = []
+            conf["transformation_points"] = (
+                {
+                    "top_left": {"real_world": [], "image": []},
+                    "top_right": {"real_world": [], "image": []},
+                    "bottom_left": {"real_world": [], "image": []},
+                    "bottom_right": {"real_world": [], "image": []},
+                },
+            )
             dump(conf, config_file, indent=4)
+        with open(TESTING_REGION_OF_INTEREST_PATH, "w", encoding="utf-8") as roi_file:
+            dump([], roi_file, indent=4)
 
     def tearDown(self) -> None:
-        remove(self.__testing_config_path)
-        rmdir(self.__testing_config_path.parent)
+        # pass
+        if TESTING_CONFIG_PATH.exists():
+            TESTING_CONFIG_PATH.unlink()
+        if TESTING_CONFIG_PATH.parent.exists():
+            TESTING_REGION_OF_INTEREST_PATH.unlink()
+        if TESTING_CONFIG_PATH.parent.exists():
+            TESTING_CONFIG_PATH.parent.rmdir()
 
     def test_car_only_checking_tracked_position_car_tracked_successfully(self) -> None:
-        """Tests that the car is tracked successfully. It will draw an orange rectangle on the representing the car."""
+        """Tests that the car is tracked successfully. It will draw an orange rectangle on the screen representing the car."""
         tracking_path: list[tuple[int, int]] = [
             (125, 127),
             (148, 267),
@@ -65,13 +73,20 @@ class VehicleTrackingTest(unittest.TestCase):
             start_coord[1] + middle[1],
         )
 
+        with open(TESTING_CONFIG_PATH, "r", encoding="utf-8") as config_file:
+            config = load(config_file)
+
+        config["testing_related"] = {"testing": True, "vehicle_coordinates": list(initial_position)}
+        config["starting_tracker"]["show_tracking_view"] = False
+
+        with open(TESTING_CONFIG_PATH, "w", encoding="utf-8") as config_file:
+            dump(config, config_file, indent=4)
+
         source = VirtualCamera([car_draw_object], 60)
         tracker = VehicleTracker(
             source,
-            show_tracking_view=False,
-            vehicle_coordinates=initial_position,
-            config_path=self.__testing_config_path,
-            testing=True,
+            config_path=TESTING_CONFIG_PATH,
+            region_of_interest_path=TESTING_REGION_OF_INTEREST_PATH
         )
         position_sender = self.__config["pynng"]["publishers"]["position_sender"]
         sub_address = position_sender["address"]
@@ -92,4 +107,6 @@ class VehicleTrackingTest(unittest.TestCase):
             if x_offset > 5 or y_offset > 5:
                 passed = False
                 break
+
         self.assertTrue(passed)
+        tracker.stop_execution()
