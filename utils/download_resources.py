@@ -37,7 +37,7 @@ def main() -> None:
             print("File downloaded successfully")
         else:
             print("File could not be downloaded")
-        print("\n")
+        print()
 
 
 if __name__ == "__main__":
