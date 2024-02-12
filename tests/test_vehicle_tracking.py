@@ -15,7 +15,7 @@ CURRENT_DIR = Path(__file__).parent
 CAR_COLOR = (1, 70, 206)
 TEMPLATE_CONFIG_PATH = CURRENT_DIR.parent / "vehicle_tracking/templates/tracker_config.json"
 TESTING_CONFIG_PATH = CURRENT_DIR / "tmp/vehicle_tracking_config.json"
-TESTING_REGION_OF_INTEREST_PATH = CURRENT_DIR / "region_of_interest.json"
+TESTING_REGION_OF_INTEREST_PATH = CURRENT_DIR / "tmp/region_of_interest.json"
 
 
 class VehicleTrackingTest(unittest.TestCase):
@@ -38,6 +38,7 @@ class VehicleTrackingTest(unittest.TestCase):
                 },
             )
             dump(conf, config_file, indent=4)
+            print(conf["pynng"]["publishers"])
         with open(TESTING_REGION_OF_INTEREST_PATH, "w", encoding="utf-8") as roi_file:
             dump([], roi_file, indent=4)
 
@@ -84,9 +85,7 @@ class VehicleTrackingTest(unittest.TestCase):
 
         source = VirtualCamera([car_draw_object], 60)
         tracker = VehicleTracker(
-            source,
-            config_path=TESTING_CONFIG_PATH,
-            region_of_interest_path=TESTING_REGION_OF_INTEREST_PATH
+            source, config_path=TESTING_CONFIG_PATH, region_of_interest_path=TESTING_REGION_OF_INTEREST_PATH
         )
         position_sender = self.__config["pynng"]["publishers"]["position_sender"]
         sub_address = position_sender["address"]
