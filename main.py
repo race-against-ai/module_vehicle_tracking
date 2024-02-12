@@ -9,9 +9,16 @@ from vehicle_tracking.image_sources import CameraStreamSource, VideoFileSource
 from vehicle_tracking.tracker import VehicleTracker
 
 
+CONFIG_PATH = Path("./vehicle_tracking_config.json")
+
+
 if __name__ == "__main__":
-    config_path = Path().cwd() / "vehicle_tracking_config.json"
-    with open(config_path, "r", encoding="utf-8") as config_file:
+    if not CONFIG_PATH.exists():
+        with open(Path(__file__) / "vehicle_tracking/templates/tracker_config.json", "r", encoding="utf-8") as template:
+            with open(CONFIG_PATH, "x", encoding="utf-8") as f:
+                f.write(template.read())
+
+    with open(CONFIG_PATH, "r", encoding="utf-8") as config_file:
         config: dict[str, Any] = load(config_file)
         starting_tracker_config = config["starting_tracker"]
         pynng_subscriber_config = config["pynng"]["subscribers"]
@@ -20,7 +27,7 @@ if __name__ == "__main__":
     if starting_tracker_config["use_camera_stream"]:
         source = CameraStreamSource(pynng_subscriber_config["camera_frame_receiver"]["address"])
     else:
-        source = VideoFileSource(config_path.parent / starting_tracker_config["video_file_path"], 1000)
+        source = VideoFileSource(CONFIG_PATH.parent / starting_tracker_config["video_file_path"], 1000)
     tracker = VehicleTracker(source)
     while True:
         tracker.step()
