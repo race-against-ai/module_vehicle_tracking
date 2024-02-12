@@ -1,7 +1,9 @@
 {
     "starting_tracker": {
         "use_camera_stream": true,
-        "video_file_path": ""
+        "video_file_path": "",
+        "show_tracking_view": true,
+        "record_video": false
     },
     "pynng": {
         "publishers": {
@@ -32,24 +34,5 @@
         "url": "https://cloud.ngitl.dev/remote.php/dav/files/raai_download/",
         "client_name": "raai_download",
         "client_password": "mJpyehF5M5ehWJQKBsxOcW3ctn2tm4Ip"
-    },
-    "coordinate_transform": {
-        "top_left": {
-            "real_world_points": [],
-            "image_points": []
-        },
-        "top_right": {
-            "real_world_points": [],
-            "image_points": []
-        },
-        "bottom_left": {
-            "real_world_points": [],
-            "image_points": []
-        },
-        "bottom_right": {
-            "real_world_points": [],
-            "image_points": []
-        }
-    },
-    "roi_points": []
+    }
 }
