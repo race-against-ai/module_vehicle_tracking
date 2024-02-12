@@ -37,6 +37,10 @@ class VideoFileSource:
         sleep(self.__time_to_sleep)
         return frame
 
+    def close(self) -> None:
+        """Closes the video capture."""
+        self.__video_capture.release()
+
 
 class CameraStreamSource:
     """An image source which reads images from a camera stream.
@@ -61,3 +65,7 @@ class CameraStreamSource:
         frame = np.frombuffer(frame_bytes, np.uint8)
         frame = frame.reshape(self.frame_size)
         return frame
+
+    def close(self) -> None:
+        """Closes the frame receiver."""
+        self.__frame_receiver.close()
