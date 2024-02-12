@@ -14,7 +14,7 @@ CONFIG_PATH = Path("./vehicle_tracking_config.json")
 
 if __name__ == "__main__":
     if not CONFIG_PATH.exists():
-        with open(Path(__file__) / "vehicle_tracking/templates/tracker_config.json", "r", encoding="utf-8") as template:
+        with open(Path(__file__).parent / "vehicle_tracking/templates/tracker_config.json", "r", encoding="utf-8") as template:
             with open(CONFIG_PATH, "x", encoding="utf-8") as f:
                 f.write(template.read())
 
