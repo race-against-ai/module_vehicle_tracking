@@ -18,7 +18,7 @@
                 "address": "ipc:///tmp/RAAI/tracker_frame.ipc",
                 "topics": {}
             },
-            "tracker_config": {
+            "request_config_sender": {
                 "address": "ipc:///tmp/RAAI/tracker_config.ipc",
                 "topics": {}
             }

@@ -79,14 +79,14 @@
                         "processed_image_sender": {
                             "$ref": "#/$def/empty_sender"
                         },
-                        "tracker_config": {
+                        "request_config_sender": {
                             "$ref": "#/$def/empty_sender"
                         }
                     },
                     "required": [
                         "position_sender",
                         "processed_image_sender",
-                        "tracker_config"
+                        "request_config_sender"
                     ]
                 },
                 "subscribers": {

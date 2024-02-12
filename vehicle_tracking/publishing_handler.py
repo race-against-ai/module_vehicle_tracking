@@ -247,7 +247,7 @@ class PublishingHandler:
             self.__tracker, self.__pynng_pubs["processed_image_sender"]["address"]
         )
         self.request_server = _RequestServer(
-            self.__tracker, self.__pynng_pubs["tracker_config"]["address"], self.stop_awaiting_request
+            self.__tracker, self.__pynng_pubs["request_config_sender"]["address"], self.stop_awaiting_request
         )
 
     def send_position(self) -> None:
