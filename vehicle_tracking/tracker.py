@@ -66,6 +66,7 @@ class VehicleTracker:
         self.__upper_orange = np.array((55, 115, 225), np.uint8)
         self.__lower_green = np.array((0, 150, 0), np.uint8)
         self.__upper_green = np.array((100, 255, 100), np.uint8)
+        self.car_to_show = 0
 
         self.__region_of_interest: np.ndarray | None = None
         with open(config_path, "r") as f:
@@ -110,7 +111,7 @@ class VehicleTracker:
         current_timestamp = time()
         delta = current_timestamp - self.__last_timestamp or 1
         fps = 1.0 / delta
-        print(f"d-Time={delta}; FPS={fps}")
+        #print(f"d-Time={delta}; FPS={fps}")
         self.__last_timestamp = current_timestamp
 
     def __process_image(self) -> None:
@@ -185,7 +186,9 @@ class VehicleTracker:
 
                 if prediction:
                     self.__previous_contours[index] = current_contour
-                    self.__bbox.append(prediction[1])
+                    self.__bbox[index] = prediction[1]
+                    print(self.__bbox)
+                    print(prediction)
 
     def __visualize_contours(self) -> None:
         """Visualizes the contours with their bounding boxes on the processed frame."""
@@ -200,8 +203,9 @@ class VehicleTracker:
                 else: 
                     cv2.rectangle(self.__visualized_frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
-            x, y, w, h = self.__bbox[index]
-            cv2.rectangle(self.__visualized_frame, (x, y), (x + w, y + h), (255, 255, 255), 2)
+            if index == self.car_to_show:
+                x, y, w, h = self.__bbox[index]
+                cv2.rectangle(self.__visualized_frame, (x, y), (x + w, y + h), (255, 255, 255), 2)
 
     def __write_frame_to_video(self) -> None:
         """Writes the last visualized frame to the video."""
@@ -221,8 +225,9 @@ class VehicleTracker:
                 raise KeyboardInterrupt("User pressed 'q' to stop the visualization.")
 
     def __send_bbox_coordinates(self):
+        print(self.__bbox)
         """Sends the middle coordinates of the car using pynng."""
-        middle = (self.__bbox[0][0] + floor(self.__bbox[0][2] / 2), self.__bbox[0][1] + floor(self.__bbox[0][3] / 2))
+        middle = (self.__bbox[self.car_to_show][0] + floor(self.__bbox[self.car_to_show][2] / 2), self.__bbox[self.car_to_show][1] + floor(self.__bbox[self.car_to_show][3] / 2))
         print(middle)
         str_with_topic = self.__position_sender_topics["coords_image"] + " " + dumps(middle)
         self.__position_sender.send(str_with_topic.encode("utf-8"))
@@ -233,18 +238,47 @@ class VehicleTracker:
         frame_bytes = np_frame.tobytes()
         self.__frame_sender.send(frame_bytes)
 
+
     # Main Function
     def step(self):
         """Is an infinite loop that goes through the camera stream/video."""
-        self.__read_new_frame()
-        self.__process_image()
-        #self.__processed_frame_orange = closing_orange
-        #self.__processed_frame_green = closing_green
-        self.__search_for_contours()
-        self.__make_prediction()
-        self.__visualize_contours()
-        self.__write_frame_to_video()
-        self.__show_frame()
-        self.__send_bbox_coordinates()
-        self.__send_processed_frame()
-        self.__create_timestamp()
+
+        # Create a black image
+        img = 255 * np.ones((150, 400, 3), dtype=np.uint8)
+
+        # Draw two buttons
+        cv2.rectangle(img, (50, 50), (150, 100), (0, 255, 0), -1)
+        cv2.rectangle(img, (200, 50), (300, 100), (0, 0, 255), -1)
+
+        # Put text on buttons
+        cv2.putText(img, 'Green', (60, 85), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
+        cv2.putText(img, 'Orange', (210, 85), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+
+        # Create a window and set the mouse callback function
+        cv2.namedWindow('car to time track')
+        cv2.setMouseCallback('car to time track', self.mouse_callback)
+
+        while True:
+
+            cv2.imshow('car to time track', img)
+
+            self.__read_new_frame()
+            self.__process_image()
+            self.__search_for_contours()
+            self.__make_prediction()
+            self.__visualize_contours()
+            self.__write_frame_to_video()
+            self.__show_frame()
+            self.__send_bbox_coordinates()
+            self.__send_processed_frame()
+            self.__create_timestamp()
+
+
+    # Function to handle mouse clicks
+    def mouse_callback(self, event, x, y, flags, param):
+        if event == cv2.EVENT_LBUTTONDOWN:
+            if 50 <= x <= 150 and 50 <= y <= 100:
+                self.car_to_show = 1
+            elif 200 <= x <= 300 and 50 <= y <= 100:
+                self.car_to_show = 0
+
