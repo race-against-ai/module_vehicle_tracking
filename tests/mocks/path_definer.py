@@ -9,19 +9,25 @@ import pyperclip
 import cv2
 
 
-# Classes
+PATH_DRAWER = "Path Drawer"
+
+
 class PathDefiner:
-    """A class for defining a path for testing purposes.
+    """Allows to define  a testing path with a visual interface.
     The path will, when exited with q, be saved to the users clipboard."""
 
     def __init__(self) -> None:
-        """A constructor for the PathDefiner class."""
         self.__frame_size = (990, 1332, 3)
         self.__points: list[tuple[int, int]] = []
         self.__frame: np.ndarray
 
-        cv2.namedWindow("Path Drawer")
-        cv2.setMouseCallback("Path Drawer", self.__mouse_event_handler)
+        cv2.namedWindow(PATH_DRAWER)
+        cv2.setMouseCallback(PATH_DRAWER, self.__mouse_event_handler)
+
+    def exit_program(self) -> None:
+        cv2.destroyAllWindows()
+        self.__save_path()
+        sys.exit(0)
 
     def __mouse_event_handler(self, event: int, cursor_x: int, cursor_y: int, _flags, _params) -> None:
         """The mouse event handler for the cv2.setMouseCallback().
@@ -47,23 +53,20 @@ class PathDefiner:
 
     def __draw_path(self) -> None:
         """Draws the path on the frame."""
-        cv2.polylines(self.__frame, [np.array(self.__points)], True, (255, 255, 255), 2)
+        cv2.polylines(self.__frame, [np.array(self.__points)], True, (255, 255, 255), 2)  # type: ignore[arg-type]
 
     def __show_frame(self) -> None:
         """Shows the frame on the screen."""
-        cv2.imshow("Path Drawer", self.__frame)
+        cv2.imshow(PATH_DRAWER, self.__frame)
 
     def __check_to_close(self, force_quit: bool = False) -> None:
         """Checks if the window should be closed and the path saved.
 
         Args:
-            force_quit (bool, optional): If set to true it will exit without input.
-            Defaults to False.
+            force_quit (bool, optional): If set to true it will exit without input. Defaults to False.
         """
         if cv2.waitKey(1) & 0xFF == ord("q") or force_quit:
-            cv2.destroyAllWindows()
-            self.__save_path()
-            sys.exit(0)
+            self.exit_program()
 
     def __save_path(self) -> None:
         """Saves the path to the clipboard of the user."""

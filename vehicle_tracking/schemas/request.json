@@ -1,0 +1,81 @@
+{
+    "type": "object",
+    "properties": {
+        "request_type": {
+            "type": "string"
+        },
+        "payload": {
+            "$ref": "#/$def/payload"
+        }
+    },
+    "required": [
+        "request_type"
+    ],
+    "$def": {
+        "transformation_point": {
+            "type": "object",
+            "properties": {
+                "real_world": {
+                    "type": "array",
+                    "minItems": 2,
+                    "maxItems": 2,
+                    "items": {
+                        "type": "number"
+                    }
+                },
+                "image": {
+                    "type": "array",
+                    "minItems": 2,
+                    "maxItems": 2,
+                    "items": {
+                        "type": "integer"
+                    }
+                }
+            },
+            "required": [
+                "image",
+                "real_world"
+            ]
+        },
+        "payload": {
+            "type": "object",
+            "properties": {
+                "region_of_interest": {
+                    "type": "array",
+                    "minItems": 3,
+                    "items": {
+                        "type": "array",
+                        "minItems": 2,
+                        "maxItems": 2,
+                        "items": {
+                            "type": "integer"
+                        }
+                    }
+                },
+                "transformation_points": {
+                    "type": "object",
+                    "properties": {
+                        "top_left": {
+                            "$ref": "#/$def/transformation_point"
+                        },
+                        "top_right": {
+                            "$ref": "#/$def/transformation_point"
+                        },
+                        "bottom_left": {
+                            "$ref": "#/$def/transformation_point"
+                        },
+                        "bottom_right": {
+                            "$ref": "#/$def/transformation_point"
+                        }
+                    },
+                    "required": [
+                        "top_left",
+                        "top_right",
+                        "bottom_left",
+                        "bottom_right"
+                    ]
+                }
+            }
+        }
+    }
+}

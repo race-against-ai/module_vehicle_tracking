@@ -1,0 +1,196 @@
+{
+    "type": "object",
+    "properties": {
+        "starting_tracker": {
+            "type": "object",
+            "properties": {
+                "use_camera_stream": {
+                    "type": "boolean"
+                },
+                "video_file_path": {
+                    "type": "string"
+                },
+                "show_tracking_view": {
+                    "type": "boolean"
+                },
+                "record_video": {
+                    "type": "boolean"
+                }
+            },
+            "required": [
+                "use_camera_stream",
+                "video_file_path",
+                "show_tracking_view",
+                "record_video"
+            ]
+        },
+        "testing_related": {
+            "testing": {
+                "type": "boolean"
+            },
+            "vehicle_coordinates": {
+                "type": "array",
+                "minItems": 4,
+                "maxItems": 4,
+                "items": [
+                    {
+                        "type": "number"
+                    }
+                ]
+            },
+            "required": [
+                "testing",
+                "vehicle_coordinates"
+            ]
+        },
+        "pynng": {
+            "type": "object",
+            "properties": {
+                "publishers": {
+                    "type": "object",
+                    "properties": {
+                        "position_sender": {
+                            "type": "object",
+                            "properties": {
+                                "address": {
+                                    "type": "string"
+                                },
+                                "topics": {
+                                    "type": "object",
+                                    "properties": {
+                                        "coords_image": {
+                                            "type": "string"
+                                        },
+                                        "coords_world": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "coords_image",
+                                        "coords_world"
+                                    ]
+                                }
+                            },
+                            "required": [
+                                "address",
+                                "topics"
+                            ]
+                        },
+                        "processed_image_sender": {
+                            "$ref": "#/$def/empty_sender"
+                        },
+                        "request_config_sender": {
+                            "$ref": "#/$def/empty_sender"
+                        }
+                    },
+                    "required": [
+                        "position_sender",
+                        "processed_image_sender",
+                        "request_config_sender"
+                    ]
+                },
+                "subscribers": {
+                    "type": "object",
+                    "properties": {
+                        "camera_frame_receiver": {
+                            "$ref": "#/$def/empty_sender"
+                        }
+                    },
+                    "required": [
+                        "camera_frame_receiver"
+                    ]
+                }
+            },
+            "required": [
+                "publishers",
+                "subscribers"
+            ]
+        },
+        "resource_downloader": {
+            "type": "object",
+            "properties": {
+                "url": {
+                    "type": "string"
+                },
+                "client_name": {
+                    "type": "string"
+                },
+                "client_password": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "url",
+                "client_name",
+                "client_password"
+            ]
+        },
+        "coordinate_transform": {
+            "type": "object",
+            "properties": {
+                "top_left": {
+                    "$ref": "#/$def/transformation_coordinate"
+                },
+                "top_right": {
+                    "$ref": "#/$def/transformation_coordinate"
+                },
+                "bottom_left": {
+                    "$ref": "#/$def/transformation_coordinate"
+                },
+                "bottom_right": {
+                    "$ref": "#/$def/transformation_coordinate"
+                }
+            },
+            "required": [
+                "top_left",
+                "top_right",
+                "bottom_left",
+                "bottom_right"
+            ]
+        }
+    },
+    "required": [
+        "starting_tracker",
+        "pynng"
+    ],
+    "$def": {
+        "empty_sender": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "topics": {}
+            },
+            "required": [
+                "address",
+                "topics"
+            ]
+        },
+        "transformation_coordinate": {
+            "type": "object",
+            "properties": {
+                "real_world": {
+                    "type": "array",
+                    "minItems": 2,
+                    "maxItems": 2,
+                    "items": {
+                        "type": "number"
+                    }
+                },
+                "image": {
+                    "type": "array",
+                    "minItems": 2,
+                    "maxItems": 2,
+                    "items": {
+                        "type": "integer"
+                    }
+                }
+            },
+            "required": [
+                "real_world",
+                "image"
+            ]
+        }
+    }
+}

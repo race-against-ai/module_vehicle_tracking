@@ -7,7 +7,42 @@ import numpy as np
 import cv2
 
 
-# Constant Functions
+def get_line_pixels(x_start: int, y_start: int, x_end: int, y_end: int) -> list[tuple[int, int]]:
+    """Get all pixels in a line.
+
+    Args:
+        x_start (int): Start x position of the line.
+        y_start (int): Start y position of the line.
+        x_end (int): End x position of the line.
+        y_end (int): End y position of the line.
+
+    Returns:
+        list[tuple[int, int]]: The pixels in the line.
+    """
+    delta_x = abs(x_end - x_start)
+    delta_y = abs(y_end - y_start)
+    step_x = 1 if x_start < x_end else -1
+    step_y = 1 if y_start < y_end else -1
+    error = delta_x - delta_y
+
+    pixels = []
+    while True:
+        pixels.append((x_start, y_start))
+
+        if x_start == x_end and y_start == y_end:
+            break
+
+        double_error = 2 * error
+        if double_error > -delta_y:
+            error -= delta_y
+            x_start += step_x
+        if double_error < delta_x:
+            error += delta_x
+            y_start += step_y
+
+    return pixels
+
+
 def get_path_pixels(path: list[tuple[int, int]] | list[list[int]]) -> list[tuple[int, int]]:
     """Get all pixels in a path.
 
@@ -17,30 +52,6 @@ def get_path_pixels(path: list[tuple[int, int]] | list[list[int]]) -> list[tuple
     Returns:
         list[tuple[int, int]]: The pixels in the path.
     """
-
-    def get_line_pixels(x_start: int, y_start: int, x_end: int, y_end: int) -> list[tuple[int, int]]:
-        delta_x = abs(x_end - x_start)
-        delta_y = abs(y_end - y_start)
-        step_x = 1 if x_start < x_end else -1
-        step_y = 1 if y_start < y_end else -1
-        error = delta_x - delta_y
-
-        pixels = []
-        while True:
-            pixels.append((x_start, y_start))
-
-            if x_start == x_end and y_start == y_end:
-                break
-
-            double_error = 2 * error
-            if double_error > -delta_y:
-                error -= delta_y
-                x_start += step_x
-            if double_error < delta_x:
-                error += delta_x
-                y_start += step_y
-
-        return pixels
 
     pixels: list[tuple[int, int]] = []
     num_points = len(path)
@@ -55,7 +66,14 @@ def get_path_pixels(path: list[tuple[int, int]] | list[list[int]]) -> list[tuple
 
 # Class
 class ToDrawObject:
-    """A class to represent an object to draw by the virtual camera."""
+    """A class to represent an object to draw by the virtual camera.
+
+    Args:
+            color (tuple[int, int, int]): The color of the object.
+            shape (list[tuple[int, int]]): The shape of the object.
+            speed (float): The speed of the object. (calculated and rounded down for index of path)
+            path (list[tuple[int, int]]): The path of the object.
+    """
 
     def __init__(
         self,
@@ -64,14 +82,6 @@ class ToDrawObject:
         speed: float,
         path: list[tuple[int, int]],
     ) -> None:
-        """Create a ToDrawObject.
-
-        Args:
-            color (tuple[int, int, int]): The color of the object.
-            shape (list[tuple[int, int]]): The shape of the object.
-            speed (float): The speed of the object. (calculated and rounded down for index of path)
-            path (list[tuple[int, int]]): The path of the object.
-        """
         self.color = color
         self.shape = shape
         self.speed = speed
@@ -102,20 +112,19 @@ class ToDrawObject:
 
 
 class VirtualCamera:
-    """A class that draws objects on a frame to allow easy testing."""
+    """A class that draws objects on a frame to allow easy testing.
+
+    Args:
+        to_draw_objects (list[ToDrawObject]): The objects to draw on the frame.
+        frame_rate (int): The frame rate of the camera.
+    """
 
     def __init__(self, to_draw_objects: list[ToDrawObject], frame_rate: int) -> None:
-        """Create a VirtualCamera.
-
-        Args:
-            to_draw_objects (list[ToDrawObject]): The objects to draw on the frame.
-            frame_rate (int): The frame rate of the camera.
-        """
         self.frame_size: tuple[int, int, int] = (990, 1332, 3)
         self.to_draw_objects = to_draw_objects
         self.__time_to_sleep = 1 / frame_rate
         self.__current_frame: np.ndarray = np.ndarray(self.frame_size, dtype=np.uint8)
-        self.__next_frame = self.__current_frame.copy()
+        self.__next_frame: np.ndarray = self.__current_frame.copy()
         for _ in range(2):
             self.__generate_next_frame()
 
@@ -126,7 +135,7 @@ class VirtualCamera:
         for to_draw_object in self.to_draw_objects:
             x_pos, y_pos = to_draw_object.get_next_position()
             cv2.fillPoly(
-                self.__next_frame,
+                self.__next_frame,  # type: ignore[arg-type]
                 [np.array(to_draw_object.shape)],
                 to_draw_object.color,
                 offset=(x_pos - to_draw_object.centroid[0], y_pos - to_draw_object.centroid[1]),
@@ -142,6 +151,9 @@ class VirtualCamera:
         self.__generate_next_frame()
         sleep(self.__time_to_sleep)
         return current
+
+    def close(self) -> None:
+        """Close the virtual camera. Empty function for compatibility."""
 
 
 if __name__ == "__main__":

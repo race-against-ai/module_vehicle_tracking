@@ -160,11 +160,13 @@ cython_debug/
 .idea/
 
 # Ignore downloaded Resources
-resources/*
-!resources/download_resources.py
+resources
 
 # Ignore VSCdoe settings
 .vscode
 
 # Ignore tests/tmp folder
 tests/tmp
+
+# Ignore configured ROI
+region_of_interest.json

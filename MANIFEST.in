@@ -1,0 +1,2 @@
+include vehicle_tracking/templates/*.json
+include vehicle_tracking/schemas/*.json
