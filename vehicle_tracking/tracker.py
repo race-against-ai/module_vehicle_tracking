@@ -1,3 +1,4 @@
+
 """This module is used to track the car in the camera stream/video."""
 # Copyright (C) 2023, NG:ITL
 
