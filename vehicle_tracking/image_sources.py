@@ -1,19 +1,26 @@
+"""A module that contains classes for getting images from different sources."""
+# Copyright (C) 2023, NG:ITL
+
+from pathlib import Path
 from time import sleep
+
 from pynng import Sub0
 import numpy as np
 import cv2
 
 
 class VideoFileSource:
-    def __init__(self, video_path: str, frame_rate: int) -> None:
-        """An image source which reads images from a file.
+    """An image source which reads images from a file."""
+
+    def __init__(self, video_file_filepath: Path, frame_rate: int) -> None:
+        """Constructor for the VideoFileSource class.
 
         Args:
-            video_path (str): The path of the video to be read from.
+            video_file_filepath (Path): The path of the video to be read from.
             frame_rate (int): The frame rate of the video.
         """
         self.__time_to_sleep = 1 / frame_rate
-        self.__video_capture = cv2.VideoCapture(video_path)
+        self.__video_capture = cv2.VideoCapture(str(video_file_filepath))
         self.frame_size = self.read_new_frame().shape
 
     def read_new_frame(self) -> np.ndarray:
@@ -33,13 +40,15 @@ class VideoFileSource:
 
 
 class CameraStreamSource:
+    """An image source which reads images from a camera stream."""
+
     def __init__(self, address: str) -> None:
-        """An image source which reads images from the pynng camera stream.
+        """Constructor for the CameraStreamSource class.
 
         Args:
             address (str): The pynng address to connect to the camera stream.
         """
-        self.frame_size = (480, 640, 3)
+        self.frame_size = (990, 1332, 3)
         self.__frame_receiver = Sub0()
         self.__frame_receiver.subscribe("")
         self.__frame_receiver.dial(address)

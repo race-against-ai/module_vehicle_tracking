@@ -1,0 +1,33 @@
+{
+    "pynng": {
+        "publishers": {
+            "position_sender": {
+                "address": "ipc:///tmp/RAAI/vehicle_coordinates.ipc",
+                "topics": {
+                    "coords_image": "pixel_coordinates",
+                    "coords_world": "world_coordinates"
+                }
+            },
+            "processed_image_sender": {
+                "address": "ipc:///tmp/RAAI/tracker_frame.ipc",
+                "topics": {}
+            }
+        },
+        "subscribers": {
+            "camera_frame_receiver": {
+                "address": "ipc:///tmp/RAAI/camera_frame.ipc",
+                "topics": {}
+            }
+        }
+    },
+    "resource_downloader": {
+        "url": "https://cloud.ngitl.dev/remote.php/dav/files/raai_download/",
+        "client_name": "raai_download",
+        "client_password": "mJpyehF5M5ehWJQKBsxOcW3ctn2tm4Ip"
+    },
+    "starting_tracker": {
+        "use_camera_stream": true,
+        "video_file_path": ""
+    },
+    "roi_points": []
+}

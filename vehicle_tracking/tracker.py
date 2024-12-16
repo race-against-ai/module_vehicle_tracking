@@ -1,14 +1,22 @@
+
+"""This module is used to track the car in the camera stream/video."""
 # Copyright (C) 2023, NG:ITL
-from vehicle_tracking.image_sources import VideoFileSource, CameraStreamSource
-from tests.mocks.virtual_camera import VirtualCamera
-from typing import Any
+
 from json import load, dumps
 from pathlib import Path
-from pynng import Pub0
+from typing import Any
 from math import floor
 from time import time
+
+from pynng import Pub0
 import numpy as np
 import cv2
+
+from vehicle_tracking.image_sources import VideoFileSource, CameraStreamSource
+from tests.mocks.virtual_camera import VirtualCamera
+
+# from vehicle_tracking.topview_transformation import TopViewTransformation
+
 
 # Constants
 CURRENT_DIR = Path(__file__).parent
@@ -39,7 +47,8 @@ def sorting_function_contours(contour) -> int:
 
 # Classes
 class VehicleTracker:
-    # Initialization
+    """This class is used to track the car in the camera stream/video."""
+
     def __init__(
         self,
         image_source: VideoFileSource | CameraStreamSource | VirtualCamera,
@@ -47,7 +56,7 @@ class VehicleTracker:
         record_video: bool = False,
         vehicle_coordinates: None | tuple[int, int, int, int] = None,
         config_path: Path = CURRENT_DIR.parent / "vehicle_tracking_config.json",
-    ):
+    ) -> None:
         """Defines the settings and initializes everything.
 
         Args:
@@ -61,15 +70,16 @@ class VehicleTracker:
         self.__show_tracking_view = show_tracking_view
         self.__record_video = record_video
         self.__last_timestamp = time()
-        self.__previous_contours: list[list[Any]] = [[],[]]
+        self.__previous_contours: list[Any] = []
         self.__lower_orange = np.array((0, 0, 100), np.uint8)
         self.__upper_orange = np.array((55, 115, 225), np.uint8)
-        self.__lower_green = np.array((0, 150, 0), np.uint8)
-        self.__upper_green = np.array((100, 255, 100), np.uint8)
-        self.car_to_show = 0
+
+        self.__visualized_frame: np.ndarray
+        self.__processed_frame: np.ndarray
+        self.__current_contours: list[Any]
 
         self.__region_of_interest: np.ndarray | None = None
-        with open(config_path, "r") as f:
+        with open(config_path, "r", encoding="utf-8") as f:
             config = load(f)
             self.__position_sender_link: str = config["pynng"]["publishers"]["position_sender"]["address"]
             self.__position_sender_topics: dict[str, str] = config["pynng"]["publishers"]["position_sender"]["topics"]
@@ -89,17 +99,11 @@ class VehicleTracker:
             self.__output_video = cv2.VideoWriter("output.mp4", cv2.VideoWriter_fourcc(*"mp4v"), 30, size)
 
         self.__read_new_frame()
-        self.__bbox = []
-        self.__bbox.append(cv2.selectROI("Car Tracking", self.__frame))
-        self.__bbox.append(cv2.selectROI("Car Tracking", self.__frame))
-        # if vehicle_coordinates:
-        #     x, y, w, h = vehicle_coordinates
-        #     self.__bbox = [x, y, w, h]
-        # else:
-        #     self.__bbox = []
-        #     print(cv2.selectROI("Car Tracking", self.__frame))
-        #     self.__bbox[0] = cv2.selectROI("Car Tracking", self.__frame)
-        #     self.__bbox[1] = cv2.selectROI("Car Tracking", self.__frame)
+        if vehicle_coordinates:
+            x, y, w, h = vehicle_coordinates
+            self.__bbox = [x, y, w, h]
+        else:
+            self.__bbox = cv2.selectROI("Car Tracking", self.__frame)
 
     # Called by self.main Functions
     def __read_new_frame(self) -> None:
@@ -111,7 +115,7 @@ class VehicleTracker:
         current_timestamp = time()
         delta = current_timestamp - self.__last_timestamp or 1
         fps = 1.0 / delta
-        #print(f"d-Time={delta}; FPS={fps}")
+        print(f"d-Time={delta}; FPS={fps}")
         self.__last_timestamp = current_timestamp
 
     def __process_image(self) -> None:
@@ -125,87 +129,72 @@ class VehicleTracker:
             roi = cv2.bitwise_and(self.__frame, mask)
 
         # Filters color to be mostly orange
-        in_range_image_orange = cv2.inRange(roi, self.__lower_orange, self.__upper_orange)
-        in_range_image_green = cv2.inRange(roi, self.__lower_green, self.__upper_green)
+        in_range_image = cv2.inRange(roi, self.__lower_orange, self.__upper_orange)
 
         # Fills all the gaps making more distinct
         kernel = np.ones((10, 10), np.uint8)
-        closing_orange = cv2.morphologyEx(in_range_image_orange.astype(np.uint8), cv2.MORPH_CLOSE, kernel)
-        closing_green = cv2.morphologyEx(in_range_image_green.astype(np.uint8), cv2.MORPH_CLOSE, kernel)
-        
+        closing = cv2.morphologyEx(in_range_image.astype(np.uint8), cv2.MORPH_CLOSE, kernel)
 
-        self.__processed_frames = [closing_orange, closing_green]
+        self.__processed_frame = closing
 
     def __search_for_contours(self) -> None:
         """Searches the processed image for contours"""
-        self.__current_contours = []
-        for processed_frame in self.__processed_frames:
-            contours, _ = cv2.findContours(processed_frame, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-            contours = sorted(contours, key=sorting_function_contours, reverse=True)
+        contours, _ = cv2.findContours(self.__processed_frame, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        contours = sorted(contours, key=sorting_function_contours, reverse=True)
 
-            good_contours: list[Any] = []
-            for contour in contours:
-                rect1 = cv2.boundingRect(contour)
-                if rect1[2] * rect1[3] < 100:
-                    break
-                to_add = True
-                for good_contour in good_contours:
-                    rect2 = cv2.boundingRect(good_contour)
-                    if calculate_distance(rect1, rect2) <= 75:
-                        to_add = False
-                        break
-                    good_contours.append(contour)
+        good_contours: list[Any] = []
+        for contour in contours:
+            rect1 = cv2.boundingRect(contour)
+            if rect1[2] * rect1[3] < 100:
+                break
+            to_add = True
+            for good_contour in good_contours.copy():
+                rect2 = cv2.boundingRect(good_contour)
+                if calculate_distance(rect1, rect2) <= 75:
                     to_add = False
                     break
-                if to_add:
-                    good_contours.append(contour)
+                good_contours.append(contour)
+                to_add = False
+                break
+            if to_add:
+                good_contours.append(contour)
 
-            #first contour is orange car, second green
-                
-            self.__current_contours.append(good_contours)
+        self.__current_contours = good_contours
 
     def __make_prediction(self) -> None:
         """Makes a prediction of a contour that is most likely the car."""
-        #first contour is orange car, second green
-        for index, current_contour in enumerate(self.__current_contours):
-            if current_contour == 0:
-                return
-            else:
-                prediction: tuple[int, list[int]] = (-1, [0, 0, 0, 0])
-                for contour in current_contour:
-                    x, y, w, h = cv2.boundingRect(contour)
-                    distance = calculate_distance(self.__bbox[index], [x, y, w, h])
-                    if self.__previous_contours == [] or len(self.__previous_contours) >= len(current_contour):
-                        if prediction == (-1, [0, 0, 0, 0]) or distance < prediction[0]:
-                            prediction = (distance, [x, y, w, h])
-                    else:
-                        if distance > 100:
-                            continue
-                        if prediction == (-1, [0, 0, 0, 0]) or distance > prediction[0]:
-                            prediction = (distance, [x, y, w, h])
+        if self.__current_contours == 0:
+            return
+        else:
+            prediction: tuple[int, list[int]] = (-1, [0, 0, 0, 0])
+            for contour in self.__current_contours:
+                x, y, w, h = cv2.boundingRect(contour)
+                distance = calculate_distance(self.__bbox, [x, y, w, h])
+                if not self.__previous_contours or len(self.__previous_contours) >= len(self.__current_contours):
+                    if prediction == (-1, [0, 0, 0, 0]) or distance < prediction[0]:
+                        prediction = (distance, [x, y, w, h])
+                else:
+                    if distance > 100:
+                        continue
+                    if prediction == (-1, [0, 0, 0, 0]) or distance > prediction[0]:
+                        prediction = (distance, [x, y, w, h])
 
-                if prediction:
-                    self.__previous_contours[index] = current_contour
-                    self.__bbox[index] = prediction[1]
-                    print(self.__bbox)
-                    print(prediction)
+            if prediction:
+                self.__previous_contours = self.__current_contours
+                self.__bbox = prediction[1]
 
     def __visualize_contours(self) -> None:
         """Visualizes the contours with their bounding boxes on the processed frame."""
         self.__visualized_frame = self.__frame.copy()
-        
-        for index, current_contour in enumerate(self.__current_contours):
-            # Draws green boxes around each possibility.
-            for contour in current_contour:
-                x, y, w, h = cv2.boundingRect(contour)
-                if index == 0: #orange car
-                    cv2.rectangle(self.__visualized_frame, (x, y), (x + w, y + h), (0, 0, 255), 2)
-                else: 
-                    cv2.rectangle(self.__visualized_frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
-            if index == self.car_to_show:
-                x, y, w, h = self.__bbox[index]
-                cv2.rectangle(self.__visualized_frame, (x, y), (x + w, y + h), (255, 255, 255), 2)
+        # Draws green boxes around each possibility.
+        for contour in self.__current_contours:
+            x, y, w, h = cv2.boundingRect(contour)
+            cv2.rectangle(self.__visualized_frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+
+        # Draws a white box around the car
+        x, y, w, h = self.__bbox
+        cv2.rectangle(self.__visualized_frame, (x, y), (x + w, y + h), (255, 255, 255), 2)
 
     def __write_frame_to_video(self) -> None:
         """Writes the last visualized frame to the video."""
@@ -224,61 +213,32 @@ class VehicleTracker:
             if key == ord("q"):
                 raise KeyboardInterrupt("User pressed 'q' to stop the visualization.")
 
-    def __send_bbox_coordinates(self):
-        print(self.__bbox)
+    def __send_bbox_coordinates(self) -> None:
         """Sends the middle coordinates of the car using pynng."""
-        middle = (self.__bbox[self.car_to_show][0] + floor(self.__bbox[self.car_to_show][2] / 2), self.__bbox[self.car_to_show][1] + floor(self.__bbox[self.car_to_show][3] / 2))
-        print(middle)
+        middle = (self.__bbox[0] + floor(self.__bbox[2] / 2), self.__bbox[1] + floor(self.__bbox[3] / 2))
         str_with_topic = self.__position_sender_topics["coords_image"] + " " + dumps(middle)
         self.__position_sender.send(str_with_topic.encode("utf-8"))
 
-    def __send_processed_frame(self):
+    def __send_world_coordinates(self) -> None:
+        """Sends the world coordinates of the car using pynng."""
+
+    def __send_processed_frame(self) -> None:
         """Sends the processed frame to time_tracking using pynng."""
         np_frame = np.array(self.__visualized_frame)
         frame_bytes = np_frame.tobytes()
         self.__frame_sender.send(frame_bytes)
 
-
     # Main Function
-    def step(self):
+    def step(self) -> None:
         """Is an infinite loop that goes through the camera stream/video."""
-
-        # Create a black image
-        img = 255 * np.ones((150, 400, 3), dtype=np.uint8)
-
-        # Draw two buttons
-        cv2.rectangle(img, (50, 50), (150, 100), (0, 255, 0), -1)
-        cv2.rectangle(img, (200, 50), (300, 100), (0, 0, 255), -1)
-
-        # Put text on buttons
-        cv2.putText(img, 'Green', (60, 85), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
-        cv2.putText(img, 'Orange', (210, 85), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
-
-        # Create a window and set the mouse callback function
-        cv2.namedWindow('car to time track')
-        cv2.setMouseCallback('car to time track', self.mouse_callback)
-
-        while True:
-
-            cv2.imshow('car to time track', img)
-
-            self.__read_new_frame()
-            self.__process_image()
-            self.__search_for_contours()
-            self.__make_prediction()
-            self.__visualize_contours()
-            self.__write_frame_to_video()
-            self.__show_frame()
-            self.__send_bbox_coordinates()
-            self.__send_processed_frame()
-            self.__create_timestamp()
-
-
-    # Function to handle mouse clicks
-    def mouse_callback(self, event, x, y, flags, param):
-        if event == cv2.EVENT_LBUTTONDOWN:
-            if 50 <= x <= 150 and 50 <= y <= 100:
-                self.car_to_show = 1
-            elif 200 <= x <= 300 and 50 <= y <= 100:
-                self.car_to_show = 0
-
+        self.__read_new_frame()
+        self.__process_image()
+        self.__search_for_contours()
+        self.__make_prediction()
+        self.__visualize_contours()
+        self.__write_frame_to_video()
+        self.__show_frame()
+        self.__send_bbox_coordinates()
+        self.__send_processed_frame()
+        self.__send_world_coordinates()
+        self.__create_timestamp()

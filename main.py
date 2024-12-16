@@ -1,13 +1,26 @@
-# Copyright (C) 2022 NG:ITL
-from vehicle_tracking.image_sources import VideoFileSource, CameraStreamSource
+"""The main script calling the tracker."""
+# Copyright (C) 2023, NG:ITL
+
+from pathlib import Path
+from typing import Any
+from json import load
+
+from vehicle_tracking.image_sources import CameraStreamSource, VideoFileSource
 from vehicle_tracking.tracker import VehicleTracker
 
 
-# Constants
-FRAME_RECEIVE_LINK = "ipc:///tmp/RAAI/camera_frame.ipc"
-
-
 if __name__ == "__main__":
-    source = CameraStreamSource(FRAME_RECEIVE_LINK)
+    config_path = Path().cwd() / "vehicle_tracking_config.json"
+    with open(config_path, "r", encoding="utf-8") as config_file:
+        config: dict[str, Any] = load(config_file)
+        starting_tracker_config = config["starting_tracker"]
+        pynng_subscriber_config = config["pynng"]["subscribers"]
+
+    source: VideoFileSource | CameraStreamSource
+    if starting_tracker_config["use_camera_stream"]:
+        source = CameraStreamSource(pynng_subscriber_config["camera_frame_receiver"]["address"])
+    else:
+        source = VideoFileSource(config_path.parent / starting_tracker_config["video_file_path"], 1000)
     tracker = VehicleTracker(source)
-    tracker.main()
+    while True:
+        tracker.step()
